@@ -1,64 +1,61 @@
 #include "Ball.h"
 
-#include "Player.h"
-#include "Random.h"
-
-#include <algorithm>
+#include <cmath>
 
 namespace btb {
+namespace {
 
-void Ball::reset(const Player& player) {
-    followPlayer(player);
-    y_ = player.y() - kBallSize;
-    xdir_ = randomInt(2) == 0 ? -1 : 1;
-    ydir_ = -1;
-    speed_ = kBaseSpeed;
-    stopped_ = false;
+constexpr float kMinVertical = 0.3f;
+
+}  // namespace
+
+void Ball::setAngle(float angle) {
+    dx = std::sin(angle);
+    dy = -std::cos(angle);
 }
 
-void Ball::followPlayer(const Player& player) {
-    x_ = player.x() + player.width() / 2 - kBallSize / 2;
+void Ball::rotate(float angle) {
+    const float c = std::cos(angle);
+    const float s = std::sin(angle);
+    const float newDx = dx * c - dy * s;
+    dy = dx * s + dy * c;
+    dx = newDx;
+    keepSteep();
 }
 
-void Ball::move() {
-    x_ = std::min(x_ + speed_ * xdir_, kVisibleWidth - kBallSize);
-    y_ += speed_ * ydir_;
-
-    if (x_ <= 0) {
-        xdir_ = 1;
+void Ball::keepSteep() {
+    if (std::abs(dy) >= kMinVertical) {
+        return;
     }
-    if (x_ >= kVisibleWidth - kBallSize) {
-        xdir_ = -1;
-    }
-    if (y_ <= 0) {
-        ydir_ = 1;
-    }
+    dy = dy < 0.0f ? -kMinVertical : kMinVertical;
+    dx = std::copysign(std::sqrt(1.0f - dy * dy), dx);
 }
 
-void Ball::accelerate() {
-    speed_ = std::min(speed_ + 1, kMaxSpeed);
-}
+void Ball::bounceOff(const Rect& rect) {
+    // How far the ball would have to move in each direction to stop overlapping.
+    const float left = x + kRadius - rect.x;
+    const float right = rect.x + rect.w - (x - kRadius);
+    const float up = y + kRadius - rect.y;
+    const float down = rect.y + rect.h - (y - kRadius);
 
-void Ball::slowDown() {
-    speed_ = std::max(speed_ - 1, kBaseSpeed);
-}
-
-void Ball::stop() {
-    if (!stopped_) {
-        stoppedXDir_ = xdir_;
-        stoppedYDir_ = ydir_;
-        xdir_ = 0;
-        ydir_ = 0;
-        stopped_ = true;
+    if (std::min(left, right) < std::min(up, down)) {
+        if (left < right) {
+            x -= left;
+            dx = -std::abs(dx);
+        } else {
+            x += right;
+            dx = std::abs(dx);
+        }
+    } else {
+        if (up < down) {
+            y -= up;
+            dy = -std::abs(dy);
+        } else {
+            y += down;
+            dy = std::abs(dy);
+        }
     }
-}
-
-void Ball::resume() {
-    if (stopped_) {
-        xdir_ = stoppedXDir_;
-        ydir_ = stoppedYDir_;
-        stopped_ = false;
-    }
+    keepSteep();
 }
 
 }  // namespace btb

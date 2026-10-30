@@ -1,14 +1,21 @@
 #pragma once
 
+#include <algorithm>
+
 namespace btb {
 
 struct Rect {
-    int x, y, w, h;
+    float x, y, w, h;
 
-    // Same rule as java.awt.Rectangle: rectangles that only touch along an edge do not intersect.
+    // Rectangles that only touch along an edge do not intersect.
     bool intersects(const Rect& other) const {
-        return w > 0 && h > 0 && other.w > 0 && other.h > 0 && x < other.x + other.w && other.x < x + w &&
-               y < other.y + other.h && other.y < y + h;
+        return x < other.x + other.w && other.x < x + w && y < other.y + other.h && other.y < y + h;
+    }
+
+    bool intersectsCircle(float cx, float cy, float radius) const {
+        float dx = cx - std::clamp(cx, x, x + w);
+        float dy = cy - std::clamp(cy, y, y + h);
+        return dx * dx + dy * dy < radius * radius;
     }
 };
 

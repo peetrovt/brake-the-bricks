@@ -2,8 +2,9 @@
 
 #include "Ball.h"
 #include "Brick.h"
-#include "FallingObject.h"
+#include "GameConstants.h"
 #include "Player.h"
+#include "PowerUp.h"
 #include "Renderer.h"
 
 #include <array>
@@ -36,33 +37,71 @@ private:
         Won,
     };
 
+    // Power-ups that last for a while.
+    enum class Effect { Fireball, Laser, Barrier, Catch, Slow };
+    static constexpr int kEffectCount = 5;
+
+    struct Laser {
+        float x;  // centre
+        float y;  // top
+    };
+
+    // A short label that rises and fades where a power-up was caught.
+    struct FloatingText {
+        std::string text;
+        float x;
+        float y;
+        float age;  // seconds
+    };
+
     void startLevel();
+    // Clears power-ups and puts a single ball on a normal-sized paddle.
+    void resetPaddleAndBall();
+    void launch();
     void step(int moveDirection);
-    void checkCollisions();
-    void hitBrick(size_t index);
+    void moveBalls(float seconds);
+    void moveLasers(float seconds);
+    void movePowerUps(float seconds);
+    void updateEffects(float seconds);
+    // Damages brick `index` and returns true if it was destroyed (and removed).
+    bool hitBrick(size_t index, bool smash);
+    void fire();
+    void releaseStuckBalls();
     void loseLife();
-    void applyBonus(FallingObjectKind kind);
+    void applyPowerUp(const PowerUp& powerUp);
     void showMessage(State state, const std::string& message);
 
+    bool active(Effect effect) const { return effectSeconds_[static_cast<int>(effect)] > 0.0f; }
+    float ballSpeed() const;
+    bool levelCleared() const;
+
+    void drawSprite(const gfx::Texture& texture, const Rect& visible, float alpha = 1.0f) const;
     void drawMessage(const std::string& text) const;
     void drawHud() const;
     void drawHelp() const;
 
     std::unique_ptr<gfx::Texture> background_;
-    std::unique_ptr<gfx::Texture> playerImage_;
+    std::array<std::unique_ptr<gfx::Texture>, 3> paddleImages_;
+    std::unique_ptr<gfx::Texture> ballImage_;
+    std::unique_ptr<gfx::Texture> fireBallImage_;
     std::array<std::unique_ptr<gfx::Texture>, kBrickColourCount> brickImages_;
-    std::array<std::unique_ptr<gfx::Texture>, kFallingObjectKindCount> fallingObjectImages_;
+    std::array<std::unique_ptr<gfx::Texture>, kBrickColourCount> crackedBrickImages_;
+    std::unique_ptr<gfx::Texture> metalBrickImage_;
+    std::array<std::unique_ptr<gfx::Texture>, kPowerUpKindCount> powerUpImages_;
 
     Player player_;
-    Ball ball_;
+    std::vector<Ball> balls_;
     std::vector<Brick> bricks_;
-    std::vector<FallingObject> fallingObjects_;
+    std::vector<PowerUp> powerUps_;
+    std::vector<Laser> lasers_;
+    std::vector<FloatingText> floatingTexts_;
+    std::array<float, kEffectCount> effectSeconds_{};  // time left of each effect
+    float laserCooldown_ = 0.0f;
 
     State state_ = State::Ready;
     std::string message_;
-    double bonusMessageSeconds_ = 0.0;  // the game holds still while "+1 Life" is shown
     bool helpVisible_ = false;
-    double pendingMs_ = 0.0;  // real time not yet turned into game steps
+    double pendingSeconds_ = 0.0;  // real time not yet turned into game steps
     int levelIndex_ = 0;
     int lives_ = kPlayerDefaultLives;
     int score_ = 0;

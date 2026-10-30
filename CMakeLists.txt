@@ -23,10 +23,10 @@ add_executable(brake_the_bricks
     src/main.cpp
     src/Ball.cpp
     src/Brick.cpp
-    src/FallingObject.cpp
     src/Game.cpp
     src/Level.cpp
     src/Player.cpp
+    src/PowerUp.cpp
     src/Random.cpp
     src/Renderer.cpp
 )
@@ -36,6 +36,9 @@ target_compile_options(brake_the_bricks PRIVATE -Wall -Wextra)
 # Used when the executable runs from somewhere without an assets/ folder next to it.
 target_compile_definitions(brake_the_bricks PRIVATE BTB_SOURCE_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets")
 
-# The game looks for assets/ next to the executable first.
-add_custom_command(TARGET brake_the_bricks POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:brake_the_bricks>/assets)
+# The game looks for assets/ next to the executable first. Re-copied on every build so replaced or deleted
+# images never linger.
+add_custom_target(copy_assets ALL
+    COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/assets
+    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/assets)
+add_dependencies(brake_the_bricks copy_assets)

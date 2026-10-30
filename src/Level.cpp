@@ -5,77 +5,39 @@
 namespace btb {
 namespace {
 
-constexpr int kStepX = Brick::kWidth + kBrickGap;
-constexpr int kStepY = Brick::kHeight + kBrickGap;
-// How far a row moves left when it grows by one brick on each side.
-constexpr int kWidenShift = (kBrickLayoutUnit + kBrickGap / 2) * 2;
-
-void addRow(std::vector<Brick>& bricks, int x, int y, int columns) {
-    for (int i = 0; i < columns; ++i) {
-        bricks.push_back(Brick::makeRandom(x + i * kStepX, y));
-    }
-}
-
-// Rows of ten; used by both the rectangle and the square.
-std::vector<Brick> grid(int count) {
-    std::vector<Brick> bricks;
-    for (int row = 0; row < count / 10; ++row) {
-        addRow(bricks, kOffsetSide, kOffsetTop + row * kStepY, 10);
-    }
-    return bricks;
-}
-
-// Starts with ten columns and loses one every second row, each row shifted half a brick to the right.
-std::vector<Brick> triangle(int count) {
-    std::vector<Brick> bricks;
-    int columns = 10;
-    int x = kOffsetSide;
-    int y = kOffsetTop;
-    for (int row = 1; count > 0; ++row) {
-        addRow(bricks, x, y, columns);
-        count -= columns;
-        y += kStepY;
-        if (row % 2 == 0) {
-            --columns;
-            x += Brick::kWidth / 2 + kBrickGap / 2;
-        }
-    }
-    return bricks;
-}
-
-// Centred rows that grow by two bricks for `growRows` rows, stay full until `shrinkAfterRow`, then shrink by two.
-std::vector<Brick> diamond(int count, int columns, int x, int growRows, int shrinkAfterRow) {
-    std::vector<Brick> bricks;
-    int y = kOffsetTop;
-    for (int row = 0; count > 0; ++row) {
-        addRow(bricks, x, y, columns);
-        count -= columns;
-        if (row < growRows) {
-            columns += 2;
-            x -= kWidenShift;
-        } else if (row > shrinkAfterRow) {
-            columns -= 2;
-            x += kWidenShift;
-        }
-        y += kStepY;
-    }
-    return bricks;
-}
+constexpr float kStepX = Brick::kWidth + Brick::kGap;
+constexpr float kStepY = Brick::kHeight + Brick::kGap;
+constexpr float kTop = 110.0f;
 
 }  // namespace
 
+const std::vector<LevelInfo>& levels() {
+    // Rows hold at most 14 bricks, the width of the field. Rows whose length differs by an odd number
+    // are offset by half a brick, which gives the slanted edges of the triangle and the rhombus.
+    static const std::vector<LevelInfo> all = {
+        {"rectangle", {14, 14, 14, 14, 14}, 700.0f, 10, 0},
+        {"wall", {12, 12, 12, 12, 12, 12, 12, 12}, 760.0f, 20, 0},
+        {"triangle", {14, 13, 12, 11, 10, 9, 8, 7}, 820.0f, 25, 3},
+        {"rhombus", {2, 5, 8, 11, 14, 11, 8, 5, 2}, 880.0f, 30, 4},
+        {"hexagon", {8, 10, 12, 14, 14, 14, 12, 10, 8}, 940.0f, 35, 5},
+    };
+    return all;
+}
+
 std::vector<Brick> buildLevel(int index) {
-    const int count = kLevels[index].bricks;
-    switch (index) {
-        case 2:
-            return triangle(count);
-        case 3:
-            return diamond(count, 2, kBackgroundWidth / 2 - kBrickLayoutUnit * 2, 4, 6);
-        case 4:
-            return diamond(count, 4, kBackgroundWidth / 2 - 2 * kBrickLayoutUnit - 3 * kBrickGap - kOffsetSide, 3, 7);
-        default:
-            return grid(count);
+    const LevelInfo& level = levels()[index];
+    std::vector<Brick> bricks;
+    float y = kTop;
+    for (size_t row = 0; row < level.rows.size(); ++row) {
+        const int columns = level.rows[row];
+        const float x = (kFieldWidth - (columns * kStepX - Brick::kGap)) * 0.5f;
+        const auto colour = static_cast<BrickColour>(row % kBrickColourCount);
+        for (int column = 0; column < columns; ++column) {
+            bricks.push_back(Brick::make(x + column * kStepX, y, colour, level.toughPercent, level.metalPercent));
+        }
+        y += kStepY;
     }
+    return bricks;
 }
 
 }  // namespace btb

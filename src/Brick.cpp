@@ -4,32 +4,22 @@
 
 namespace btb {
 
-Brick Brick::make(int x, int y, BrickColour colour) {
-    return {x, y, colour, randomInt(10) == 1};
+Brick Brick::make(float x, float y, BrickColour colour, int toughPercent, int metalPercent) {
+    const bool metal = randomInt(100) < metalPercent;
+    const int hits = !metal && randomInt(100) < toughPercent ? 2 : 1;
+    return {x, y, colour, hits, false, metal};
 }
 
-Brick Brick::makeRandom(int x, int y) {
-    return make(x, y, static_cast<BrickColour>(randomInt(kBrickColourCount)));
-}
-
-Rect Brick::horizontalEdge(int ballYDir) const {
-    if (ballYDir == 1) {
-        return {x, y, kWidth, 1};
+bool Brick::hit(bool smash) {
+    if (metal) {
+        return false;
     }
-    if (ballYDir == -1) {
-        return {x, y + kHeight, kWidth, 1};
+    if (smash || hitsLeft <= 1) {
+        return true;
     }
-    return {0, 0, 0, 0};
-}
-
-Rect Brick::verticalEdge(int ballXDir) const {
-    if (ballXDir == 1) {
-        return {x, y, 1, kHeight};
-    }
-    if (ballXDir == -1) {
-        return {x + kWidth, y, 1, kHeight};
-    }
-    return {0, 0, 0, 0};
+    --hitsLeft;
+    cracked = true;
+    return false;
 }
 
 }  // namespace btb

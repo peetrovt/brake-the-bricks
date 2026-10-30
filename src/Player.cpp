@@ -7,36 +7,42 @@
 namespace btb {
 
 void Player::reset() {
-    width_ = kDefaultWidth;
-    x_ = (kVisibleWidth - width_) / 2;
-    y_ = kBottom - kHeight - 40;
+    size_ = PaddleSize::Normal;
+    centerX_ = kFieldWidth * 0.5f;
 }
 
-void Player::move(int direction) {
-    x_ = std::clamp(x_ + direction * kSpeed, 0, kVisibleWidth - width_);
+void Player::move(int direction, float seconds) {
+    centerX_ += direction * kSpeed * seconds;
+    keepInsideField();
 }
 
-void Player::makeBigger() {
-    if (width_ < 150) {
-        width_ += 50;
-        x_ = std::min(x_, kVisibleWidth - width_);
+void Player::grow() {
+    if (size_ != PaddleSize::Wide) {
+        size_ = static_cast<PaddleSize>(static_cast<int>(size_) + 1);
+        keepInsideField();
     }
 }
 
-void Player::makeSmaller() {
-    if (width_ >= 100) {
-        width_ -= 50;
+void Player::shrink() {
+    if (size_ != PaddleSize::Short) {
+        size_ = static_cast<PaddleSize>(static_cast<int>(size_) - 1);
     }
 }
 
-Rect Player::sideEdge(int ballXDir) const {
-    if (ballXDir == 1) {
-        return {x_, y_, 1, kHeight};
+float Player::width() const {
+    switch (size_) {
+        case PaddleSize::Short:
+            return 200.0f;
+        case PaddleSize::Wide:
+            return 420.0f;
+        default:
+            return 300.0f;
     }
-    if (ballXDir == -1) {
-        return {x_ + width_ - 1, y_, 1, kHeight};
-    }
-    return {0, 0, 0, 0};
+}
+
+void Player::keepInsideField() {
+    const float half = width() * 0.5f;
+    centerX_ = std::clamp(centerX_, half, kFieldWidth - half);
 }
 
 }  // namespace btb

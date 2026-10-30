@@ -16,8 +16,8 @@
 namespace gfx {
 namespace {
 
-constexpr float kVirtualWidth = btb::kVisibleWidth;
-constexpr float kVirtualHeight = btb::kGameHeight;
+constexpr float kVirtualWidth = btb::kFieldWidth;
+constexpr float kVirtualHeight = btb::kFieldHeight;
 constexpr float kPi = 3.14159265358979f;
 constexpr int kCircleSegments = 32;
 
@@ -165,10 +165,12 @@ Texture::Texture(const std::string& path) {
 
     glGenTextures(1, &id_);
     glBindTexture(GL_TEXTURE_2D, id_);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    // Mipmaps keep the Full HD art smooth in a smaller window.
+    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -179,13 +181,13 @@ Texture::~Texture() {
     glDeleteTextures(1, &id_);
 }
 
-void drawImage(const Texture& texture, const Rect& dest) {
+void drawImage(const Texture& texture, const Rect& dest, float alpha) {
     glEnable(GL_TEXTURE_2D);
     glBindTexture(GL_TEXTURE_2D, texture.id());
     glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
 
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+    glColor4f(alpha, alpha, alpha, alpha);  // premultiplied
     glBegin(GL_QUADS);
     glTexCoord2f(0.0f, 0.0f);
     glVertex2f(dest.x, dest.y);

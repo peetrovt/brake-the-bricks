@@ -36,7 +36,7 @@ private:
 };
 
 // Draws the whole texture stretched over `dest`.
-void drawImage(const Texture& texture, const Rect& dest);
+void drawImage(const Texture& texture, const Rect& dest, float alpha = 1.0f);
 
 // Text uses a built-in 5x7 pixel font; `scale` is the size of one font pixel. Lowercase is drawn as uppercase.
 float textWidth(const std::string& text, float scale);

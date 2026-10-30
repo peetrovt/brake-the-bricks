@@ -4,28 +4,31 @@
 
 namespace btb {
 
-// Ordered by toughness: a hit turns a brick into the previous colour, and a green brick breaks.
-enum class BrickColour { Green, Yellow, Orange, Red, Blue };
-constexpr int kBrickColourCount = 5;
+// The colours of the art pack, in the order the rows of a level use them.
+enum class BrickColour { Red, Orange, Yellow, Green, Cyan, Blue, Purple };
+constexpr int kBrickColourCount = 7;
 
 struct Brick {
-    static constexpr int kWidth = 40;
-    static constexpr int kHeight = 20;
+    static constexpr float kWidth = 120.0f;
+    static constexpr float kHeight = 60.0f;
+    static constexpr float kGap = 6.0f;
 
-    int x;
-    int y;
+    float x;
+    float y;
     BrickColour colour;
-    bool hasFallingObject;  // drops a bonus when hit
+    int hitsLeft;   // 2 for a tough brick that has not been hit yet
+    bool cracked;   // a tough brick that has been hit once
+    bool metal;     // unbreakable, and not needed to finish the level
 
-    // A brick of the given colour; one in ten carries a falling object.
-    static Brick make(int x, int y, BrickColour colour);
-    static Brick makeRandom(int x, int y);
+    // `toughPercent` and `metalPercent` are the chances of a 2-hit brick and of a metal brick.
+    static Brick make(float x, float y, BrickColour colour, int toughPercent, int metalPercent);
+
+    // Returns true when the hit destroys the brick. `smash` (fireball) breaks tough bricks at once.
+    bool hit(bool smash);
 
     Rect rect() const { return {x, y, kWidth, kHeight}; }
-    // The 1 px strip a ball moving in `ballYDir` hits: the top for 1 (down), just below the bottom for -1 (up).
-    Rect horizontalEdge(int ballYDir) const;
-    // The 1 px strip a ball moving in `ballXDir` hits: the left side for 1 (right), just past the right side for -1.
-    Rect verticalEdge(int ballXDir) const;
+    float centerX() const { return x + kWidth * 0.5f; }
+    float centerY() const { return y + kHeight * 0.5f; }
 };
 
 }  // namespace btb

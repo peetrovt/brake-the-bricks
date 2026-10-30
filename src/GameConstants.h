@@ -1,38 +1,17 @@
 #pragma once
 
-#include <array>
-
 namespace btb {
 
-// The playing field, in pixels. The original Swing frame was 500 x 600, minus 6 px of borders
-// and a 23 px menu bar; the background image is still drawn 500 px wide and clipped on the right.
-constexpr int kBackgroundWidth = 500;
-constexpr int kVisibleWidth = 494;
-constexpr int kGameHeight = 577;
-constexpr int kBottom = kGameHeight - 10;
+// The playing field matches the Full HD background, in pixels.
+constexpr float kFieldWidth = 1920.0f;
+constexpr float kFieldHeight = 1080.0f;
 
-constexpr int kBallSize = 15;
-constexpr int kFallingObjectSize = 30;
+// Every sprite in the art pack except bricks and the background has a 12 px glow around the part that collides.
+constexpr float kGlowPadding = 12.0f;
+
 constexpr int kPlayerDefaultLives = 3;
 
-// Level layout: the shapes step by kBrickLayoutUnit, which is half a brick image wide.
-constexpr int kBrickLayoutUnit = 20;
-constexpr int kOffsetSide = 40;
-constexpr int kOffsetTop = 70;
-constexpr int kBrickGap = 2;
-
-struct LevelInfo {
-    const char* figure;
-    int bricks;
-    int tickMs;  // time per game step; lower is faster
-};
-
-constexpr std::array<LevelInfo, 5> kLevels = {{
-    {"rectangle", 50, 9},
-    {"square", 100, 8},
-    {"triangle", 80, 7},
-    {"rhombus", 80, 6},
-    {"hexagon", 96, 5},
-}};
+// The game advances in fixed steps, independent of the frame rate.
+constexpr double kStepSeconds = 1.0 / 240.0;
 
 }  // namespace btb
