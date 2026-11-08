@@ -79,7 +79,7 @@ Game::Game(const std::string& assetsDir) {
         return std::make_unique<gfx::Texture>(assetsDir + "/images/" + name);
     };
 
-    messageFont_ = std::make_unique<gfx::Font>(assetsDir + "/fonts/LiberationSans-Bold.ttf");
+    font_ = std::make_unique<gfx::Font>(assetsDir + "/fonts/LiberationSans-Bold.ttf");
     background_ = load("background.png");
     paddleImages_[static_cast<int>(PaddleSize::Short)] = load("paddle-short.png");
     paddleImages_[static_cast<int>(PaddleSize::Normal)] = load("paddle.png");
@@ -535,9 +535,9 @@ void Game::draw() const {
     }
 
     for (const FloatingText& text : floatingTexts_) {
-        const float scale = 4.0f;
-        gfx::drawText(text.text, text.x - gfx::textWidth(text.text, scale) * 0.5f, text.y, scale,
-                      {1.0f, 0.95f, 0.6f, 1.0f - text.age / kFloatingTextSeconds});
+        const float size = 44.0f;
+        font_->draw(text.text, text.x - font_->width(text.text, size) * 0.5f, text.y, size,
+                    {1.0f, 0.95f, 0.6f, 1.0f - text.age / kFloatingTextSeconds});
     }
 
     if (state_ != State::Playing) {
@@ -551,29 +551,29 @@ void Game::draw() const {
 
 void Game::drawMessage(const std::string& text) const {
     // As big as fits the field, up to the size the font is sharp at.
-    const float size = std::min(1800.0f / messageFont_->width(text, 1.0f), 90.0f);
-    const float x = (kFieldWidth - messageFont_->width(text, size)) * 0.5f;
+    const float size = std::min(1800.0f / font_->width(text, 1.0f), 90.0f);
+    const float x = (kFieldWidth - font_->width(text, size)) * 0.5f;
     // Between the lowest brick row of the tallest level and the paddle.
     const float y = 840.0f - 0.5f * size;
-    messageFont_->draw(text, x, y, size, kMessageColor);
+    font_->draw(text, x, y, size, kMessageColor);
 }
 
 void Game::drawHud() const {
-    const float scale = 4.0f;
-    const float y = 24.0f;
+    const float size = 44.0f;
+    const float y = 18.0f;
     const float spacing = 60.0f;
 
     float x = 40.0f;
     for (const std::string& text : {"Score: " + std::to_string(score_), "Lives: " + std::to_string(lives_),
                                     "Level " + std::to_string(levelIndex_ + 1) + "/" +
                                         std::to_string(levels().size())}) {
-        gfx::drawText(text, x, y, scale, kHudColor);
-        x += gfx::textWidth(text, scale) + spacing;
+        font_->draw(text, x, y, size, kHudColor);
+        x += font_->width(text, size) + spacing;
     }
 
     const std::string help = "H - Help";
-    float right = kFieldWidth - 40.0f - gfx::textWidth(help, scale);
-    gfx::drawText(help, right, y, scale, {1.0f, 1.0f, 1.0f, 0.6f});
+    float right = kFieldWidth - 40.0f - font_->width(help, size);
+    font_->draw(help, right, y, size, {1.0f, 1.0f, 1.0f, 0.6f});
 
     // Running effects: an icon with a bar for the time left, right to left before the help hint.
     const float icon = 44.0f;
@@ -600,12 +600,12 @@ void Game::drawHelp() const {
     gfx::fillRect({0.0f, 0.0f, kFieldWidth, kFieldHeight}, {0.0f, 0.0f, 0.0f, 0.55f});
     gfx::fillRect(panel, {0.04f, 0.04f, 0.13f, 0.94f});
 
-    auto centred = [&](const std::string& text, float y, float scale, const gfx::Color& color) {
-        gfx::drawText(text, panel.x + (panel.w - gfx::textWidth(text, scale)) * 0.5f, y, scale, color);
+    auto centred = [&](const std::string& text, float y, float size, const gfx::Color& color) {
+        font_->draw(text, panel.x + (panel.w - font_->width(text, size)) * 0.5f, y, size, color);
     };
-    centred("Brake The Bricks 2.0", panel.y + 40.0f, 6.0f, kMessageColor);
-    centred("Left / Right - Move    Enter - Start / Pause", panel.y + 120.0f, 3.0f, kWhite);
-    centred("Space - Fire / Release    F11 - Fullscreen    Esc - Exit", panel.y + 160.0f, 3.0f, kWhite);
+    centred("Brake The Bricks 2.0", panel.y + 30.0f, 66.0f, kMessageColor);
+    centred("Left / Right - Move    Enter - Start / Pause", panel.y + 115.0f, 33.0f, kWhite);
+    centred("Space - Fire / Release    F11 - Fullscreen    Esc - Exit", panel.y + 155.0f, 33.0f, kWhite);
 
     const float icon = 64.0f;
     const float rowHeight = 100.0f;
@@ -615,13 +615,13 @@ void Game::drawHelp() const {
         const float pad = icon * kGlowPadding / 96.0f;
         gfx::drawImage(*powerUpImages_[kind], {x - pad, y - pad, icon + 2.0f * pad, icon + 2.0f * pad});
         const auto powerUp = static_cast<PowerUpKind>(kind);
-        gfx::drawText(powerUpName(powerUp), x + icon + 24.0f, y + 4.0f, 4.0f, kMessageColor);
-        gfx::drawText(powerUpDescription(powerUp), x + icon + 24.0f, y + 40.0f, 3.0f, kWhite);
+        font_->draw(powerUpName(powerUp), x + icon + 24.0f, y - 8.0f, 44.0f, kMessageColor);
+        font_->draw(powerUpDescription(powerUp), x + icon + 24.0f, y + 40.0f, 33.0f, kWhite);
     }
 
-    centred("Debug: Q clear level, W/E paddle size, R random power-up, 1-0 drop power-up", panel.y + 790.0f, 2.0f,
+    centred("Debug: Q clear level, W/E paddle size, R random power-up, 1-0 drop power-up", panel.y + 787.0f, 22.0f,
             {1.0f, 1.0f, 1.0f, 0.6f});
-    centred("H - Close help", panel.y + 820.0f, 2.0f, {1.0f, 1.0f, 1.0f, 0.6f});
+    centred("H - Close help", panel.y + 817.0f, 22.0f, {1.0f, 1.0f, 1.0f, 0.6f});
 }
 
 }  // namespace btb

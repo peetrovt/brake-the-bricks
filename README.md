@@ -57,5 +57,5 @@ Running effects are shown top right with a bar for the time left.
 - `src/Ball.*`, `src/Player.*`, `src/Brick.*`, `src/PowerUp.*`: the game objects
 - `src/Renderer.*`: OpenGL drawing, PNG textures, pixel font, TrueType fonts
 - `assets/images/`: the art pack
-- `assets/fonts/`: Liberation Sans (Arial-compatible), used for the on-screen messages, and DejaVu Sans (see the `LICENSE-*.txt` files)
+- `assets/fonts/`: Liberation Sans (Arial-compatible), used for all the game's text, and DejaVu Sans (see the `LICENSE-*.txt` files)
 - `third_party/stb/`: `stb_image.h` for PNG loading, `stb_truetype.h` for fonts
