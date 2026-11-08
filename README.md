@@ -30,7 +30,8 @@ power-up in turn.
 
 ## Rules
 
-- Five levels: rectangle, wall, triangle, rhombus, hexagon. The ball gets faster each level.
+- Ten levels: rectangle, wall, triangle, rhombus, hexagon, hourglass, arrow, cross, bars, fortress. The ball gets
+  faster each level.
 - Some bricks take two hits (they show cracks after the first). Metal bricks never break and are not needed to
   finish a level.
 - 10 points per broken brick, 5 per crack, 10 per caught power-up. One broken brick in seven drops a power-up.
@@ -53,7 +54,7 @@ Running effects are shown top right with a bar for the time left.
 ## Layout
 
 - `src/Game.*`: game states, collisions, power-ups, scoring, drawing
-- `src/Level.*`: the five brick layouts and per-level speed and brick mix
+- `src/Level.*`: the ten brick layouts and per-level speed and brick mix
 - `src/Ball.*`, `src/Player.*`, `src/Brick.*`, `src/PowerUp.*`: the game objects
 - `src/Renderer.*`: OpenGL drawing, PNG textures, pixel font, TrueType fonts
 - `assets/images/`: the art pack

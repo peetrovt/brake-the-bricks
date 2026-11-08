@@ -13,13 +13,19 @@ constexpr float kTop = 110.0f;
 
 const std::vector<LevelInfo>& levels() {
     // Rows hold at most 14 bricks, the width of the field. Rows whose length differs by an odd number
-    // are offset by half a brick, which gives the slanted edges of the triangle and the rhombus.
+    // are offset by half a brick, which gives the slanted edges of the triangle and the rhombus. A row of 0
+    // leaves an empty line. More than 10 rows would reach the on-screen messages.
     static const std::vector<LevelInfo> all = {
         {"rectangle", {14, 14, 14, 14, 14}, 700.0f, 10, 0},
         {"wall", {12, 12, 12, 12, 12, 12, 12, 12}, 760.0f, 20, 0},
         {"triangle", {14, 13, 12, 11, 10, 9, 8, 7}, 820.0f, 25, 3},
         {"rhombus", {2, 5, 8, 11, 14, 11, 8, 5, 2}, 880.0f, 30, 4},
         {"hexagon", {8, 10, 12, 14, 14, 14, 12, 10, 8}, 940.0f, 35, 5},
+        {"hourglass", {14, 12, 10, 8, 6, 6, 8, 10, 12, 14}, 1000.0f, 40, 6},
+        {"arrow", {2, 4, 6, 8, 10, 12, 14, 4, 4, 4}, 1060.0f, 45, 7},
+        {"cross", {4, 4, 4, 14, 14, 14, 14, 4, 4, 4}, 1120.0f, 50, 8},
+        {"bars", {14, 0, 14, 14, 0, 14, 14, 0, 14, 14}, 1180.0f, 55, 9},
+        {"fortress", {14, 14, 14, 14, 14, 14, 14, 14, 14, 14}, 1300.0f, 65, 10},
     };
     return all;
 }
