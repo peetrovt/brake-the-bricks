@@ -4,14 +4,19 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb/stb_image.h"
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb/stb_truetype.h"
 
 #include <GL/gl.h>
 #include <algorithm>
 #include <array>
 #include <cctype>
 #include <cmath>
+#include <fstream>
+#include <iterator>
 #include <stdexcept>
 #include <unordered_map>
+#include <vector>
 
 namespace gfx {
 namespace {
@@ -20,6 +25,11 @@ constexpr float kVirtualWidth = btb::kFieldWidth;
 constexpr float kVirtualHeight = btb::kFieldHeight;
 constexpr float kPi = 3.14159265358979f;
 constexpr int kCircleSegments = 32;
+
+constexpr int kFirstFontChar = 32;
+constexpr float kFontBakeSize = 96.0f;  // a little above the largest message
+constexpr int kFontAtlasSize = 1024;
+constexpr int kFontPadding = 4;  // keeps neighbouring glyphs from bleeding together in the mipmaps
 
 void color(const Color& c) { glColor4f(c.r, c.g, c.b, c.a); }
 
@@ -217,6 +227,108 @@ void drawText(const std::string& text, float x, float y, float scale, const Colo
     drawGlyphs(text, x + shadow, y + shadow, scale);
     color(c);
     drawGlyphs(text, x, y, scale);
+}
+
+Font::Font(const std::string& path) {
+    std::ifstream file(path, std::ios::binary);
+    if (!file) {
+        throw std::runtime_error("Cannot open font " + path);
+    }
+    const std::vector<unsigned char> data((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+
+    std::vector<unsigned char> atlas(static_cast<size_t>(kFontAtlasSize) * kFontAtlasSize);
+    std::array<stbtt_packedchar, std::tuple_size<decltype(glyphs_)>::value> packed;
+    stbtt_pack_context context;
+    if (!stbtt_PackBegin(&context, atlas.data(), kFontAtlasSize, kFontAtlasSize, 0, kFontPadding, nullptr)) {
+        throw std::runtime_error("Cannot bake font " + path);
+    }
+    const int baked = stbtt_PackFontRange(&context, data.data(), 0, kFontBakeSize, kFirstFontChar,
+                                          static_cast<int>(packed.size()), packed.data());
+    stbtt_PackEnd(&context);
+    if (!baked) {
+        throw std::runtime_error("Cannot bake font " + path);
+    }
+
+    float descent = 0.0f;
+    float lineGap = 0.0f;
+    stbtt_GetScaledFontVMetrics(data.data(), 0, kFontBakeSize, &ascent_, &descent, &lineGap);
+    for (size_t i = 0; i < packed.size(); ++i) {
+        float penX = 0.0f;
+        float penY = 0.0f;
+        stbtt_aligned_quad q;
+        stbtt_GetPackedQuad(packed.data(), kFontAtlasSize, kFontAtlasSize, static_cast<int>(i), &penX, &penY, &q, 0);
+        glyphs_[i] = {q.x0, q.y0, q.x1, q.y1, q.s0, q.t0, q.s1, q.t1, penX};
+    }
+
+    glGenTextures(1, &id_);
+    glBindTexture(GL_TEXTURE_2D, id_);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, kFontAtlasSize, kFontAtlasSize, 0, GL_ALPHA, GL_UNSIGNED_BYTE,
+                 atlas.data());
+    glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+Font::~Font() {
+    glDeleteTextures(1, &id_);
+}
+
+const Font::Glyph* Font::glyph(char c) const {
+    const int index = static_cast<unsigned char>(c) - kFirstFontChar;
+    if (index < 0 || index >= static_cast<int>(glyphs_.size())) {
+        return nullptr;
+    }
+    return &glyphs_[index];
+}
+
+float Font::width(const std::string& text, float size) const {
+    float pen = 0.0f;
+    for (char c : text) {
+        if (const Glyph* g = glyph(c)) {
+            pen += g->advance;
+        }
+    }
+    return pen * size / kFontBakeSize;
+}
+
+void Font::drawGlyphs(const std::string& text, float x, float baseline, float ratio) const {
+    glBegin(GL_QUADS);
+    for (char c : text) {
+        const Glyph* g = glyph(c);
+        if (!g) {
+            continue;
+        }
+        glTexCoord2f(g->u0, g->v0);
+        glVertex2f(x + g->x0 * ratio, baseline + g->y0 * ratio);
+        glTexCoord2f(g->u1, g->v0);
+        glVertex2f(x + g->x1 * ratio, baseline + g->y0 * ratio);
+        glTexCoord2f(g->u1, g->v1);
+        glVertex2f(x + g->x1 * ratio, baseline + g->y1 * ratio);
+        glTexCoord2f(g->u0, g->v1);
+        glVertex2f(x + g->x0 * ratio, baseline + g->y1 * ratio);
+        x += g->advance * ratio;
+    }
+    glEnd();
+}
+
+void Font::draw(const std::string& text, float x, float y, float size, const Color& c) const {
+    const float ratio = size / kFontBakeSize;
+    const float baseline = y + ascent_ * ratio;
+    const float shadow = std::max(1.0f, size / 14.0f);
+
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, id_);
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    color({0.0f, 0.0f, 0.0f, 0.7f * c.a});
+    drawGlyphs(text, x + shadow, baseline + shadow, ratio);
+    color(c);
+    drawGlyphs(text, x, baseline, ratio);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
 }
 
 }  // namespace gfx

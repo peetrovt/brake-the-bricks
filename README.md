@@ -55,6 +55,7 @@ Running effects are shown top right with a bar for the time left.
 - `src/Game.*`: game states, collisions, power-ups, scoring, drawing
 - `src/Level.*`: the five brick layouts and per-level speed and brick mix
 - `src/Ball.*`, `src/Player.*`, `src/Brick.*`, `src/PowerUp.*`: the game objects
-- `src/Renderer.*`: OpenGL drawing, PNG textures, pixel font
+- `src/Renderer.*`: OpenGL drawing, PNG textures, pixel font, TrueType fonts
 - `assets/images/`: the art pack
-- `third_party/stb/`: `stb_image.h` for PNG loading
+- `assets/fonts/`: Liberation Sans (Arial-compatible), used for the on-screen messages, and DejaVu Sans (see the `LICENSE-*.txt` files)
+- `third_party/stb/`: `stb_image.h` for PNG loading, `stb_truetype.h` for fonts

@@ -80,6 +80,7 @@ private:
     void drawHud() const;
     void drawHelp() const;
 
+    std::unique_ptr<gfx::Font> messageFont_;
     std::unique_ptr<gfx::Texture> background_;
     std::array<std::unique_ptr<gfx::Texture>, 3> paddleImages_;
     std::unique_ptr<gfx::Texture> ballImage_;

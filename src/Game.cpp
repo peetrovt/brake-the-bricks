@@ -79,6 +79,7 @@ Game::Game(const std::string& assetsDir) {
         return std::make_unique<gfx::Texture>(assetsDir + "/images/" + name);
     };
 
+    messageFont_ = std::make_unique<gfx::Font>(assetsDir + "/fonts/LiberationSans-Bold.ttf");
     background_ = load("background.png");
     paddleImages_[static_cast<int>(PaddleSize::Short)] = load("paddle-short.png");
     paddleImages_[static_cast<int>(PaddleSize::Normal)] = load("paddle.png");
@@ -549,12 +550,12 @@ void Game::draw() const {
 }
 
 void Game::drawMessage(const std::string& text) const {
-    // As big as fits the field, up to 12 px per font pixel.
-    const float scale = std::clamp(std::floor(1800.0f / gfx::textWidth(text, 1.0f)), 1.0f, 12.0f);
-    const float x = (kFieldWidth - gfx::textWidth(text, scale)) * 0.5f;
+    // As big as fits the field, up to the size the font is sharp at.
+    const float size = std::min(1800.0f / messageFont_->width(text, 1.0f), 90.0f);
+    const float x = (kFieldWidth - messageFont_->width(text, size)) * 0.5f;
     // Between the lowest brick row of the tallest level and the paddle.
-    const float y = 840.0f - 3.5f * scale;
-    gfx::drawText(text, x, y, scale, kMessageColor);
+    const float y = 840.0f - 0.5f * size;
+    messageFont_->draw(text, x, y, size, kMessageColor);
 }
 
 void Game::drawHud() const {
