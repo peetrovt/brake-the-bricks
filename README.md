@@ -42,7 +42,7 @@ power-up in turn.
 | Extra life | +1 life |
 | Multiball | Every ball splits into 3 (up to 24 balls) |
 | Expand / Shrink | Paddle one size wider / narrower (200, 300, 420 px) until a life is lost |
-| Laser | 12 s: Space shoots two bolts |
+| Laser | 12 s: Space shoots a bolt from the middle of the paddle |
 | Fireball | 8 s: balls smash through breakable bricks without bouncing |
 | Slow | 10 s: balls at 65% speed |
 | Barrier | 15 s: a wall below the paddle bounces balls back |

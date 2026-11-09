@@ -452,10 +452,7 @@ void Game::applyPowerUp(const PowerUp& powerUp) {
 void Game::fire() {
     releaseStuckBalls();
     if (active(Effect::Laser) && laserCooldown_ <= 0.0f) {
-        const Rect paddle = player_.rect();
-        const float y = Player::kTop - kLaserHeight;
-        lasers_.push_back({paddle.x + 30.0f, y});
-        lasers_.push_back({paddle.x + paddle.w - 30.0f, y});
+        lasers_.push_back({player_.centerX(), Player::kTop - kLaserHeight});
         laserCooldown_ = kLaserCooldown;
     }
 }
