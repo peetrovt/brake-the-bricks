@@ -1,7 +1,6 @@
 # Brake The Bricks (C++)
 
-A C++17 remake of the Java/Swing game in `../BrakeTheBricks`, using GLFW + OpenGL 2.1 and the Full HD art pack
-in `assets` (see its README).
+A C++17 brick-breaker game using GLFW + OpenGL 2.1 and the Full HD art pack in `assets` (see its README).
 
 ## Build and run
 
@@ -61,3 +60,9 @@ Running effects are shown top right with a bar for the time left.
 - `assets/`: the Ancient Temple art pack
 - `assets/fonts/`: Liberation Sans (Arial-compatible), used for all the game's text, and DejaVu Sans (see the `LICENSE-*.txt` files)
 - `third_party/stb/`: `stb_image.h` for PNG loading, `stb_truetype.h` for fonts
+
+## Licence
+
+Copyright (C) 2026 peetrovt. Licensed under the GNU GPL v3 or later, see [LICENSE](LICENSE).
+
+`third_party/stb/` (MIT) and `assets/fonts/` (SIL OFL 1.1 / DejaVu) keep their own licences.
