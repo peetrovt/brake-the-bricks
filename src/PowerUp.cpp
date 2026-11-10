@@ -27,7 +27,7 @@ constexpr std::array<int, kPowerUpKindCount> kWeights = {
 }  // namespace
 
 PowerUp PowerUp::make(float x, float y, PowerUpKind kind) {
-    return {std::clamp(x, kRadius, kFieldWidth - kRadius), y, randomFloat(300.0f, 450.0f), kind};
+    return {std::clamp(x, kWallLeft + kRadius, kWallRight - kRadius), y, randomFloat(300.0f, 450.0f), kind};
 }
 
 PowerUp PowerUp::makeRandom(float x, float y) {

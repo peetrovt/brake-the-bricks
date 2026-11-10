@@ -31,13 +31,27 @@ public:
     Texture& operator=(const Texture&) = delete;
 
     unsigned id() const { return id_; }
+    int width() const { return width_; }
+    int height() const { return height_; }
 
 private:
     unsigned id_ = 0;
+    int width_ = 0;
+    int height_ = 0;
 };
 
+enum class Blend { Normal, Additive };
+
+// Moves everything drawn from now on, for screen shake. beginFrame resets it.
+void setOffset(float x, float y);
+
 // Draws the whole texture stretched over `dest`.
-void drawImage(const Texture& texture, const Rect& dest, float alpha = 1.0f);
+void drawImage(const Texture& texture, const Rect& dest, float alpha = 1.0f, Blend blend = Blend::Normal);
+
+// Draws the `source` pixels of the texture at their own size, with (anchorX, anchorY) inside them landing on (x, y).
+// `rotation` is in radians, clockwise on screen, around that anchor.
+void drawRegion(const Texture& texture, const Rect& source, float x, float y, float anchorX, float anchorY,
+                float rotation, Blend blend);
 
 // Text uses a built-in 5x7 pixel font; `scale` is the size of one font pixel. Lowercase is drawn as uppercase.
 float textWidth(const std::string& text, float scale);

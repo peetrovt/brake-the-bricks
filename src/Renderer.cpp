@@ -112,6 +112,23 @@ void drawGlyphs(const std::string& text, float x, float y, float scale) {
     glEnd();
 }
 
+// Textures are premultiplied, so additive blending only has to drop the "cover what is behind" term.
+void beginTextured(const Texture& texture, float alpha, Blend blend) {
+    glEnable(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, texture.id());
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    glBlendFunc(GL_ONE, blend == Blend::Additive ? GL_ONE : GL_ONE_MINUS_SRC_ALPHA);
+    glColor4f(alpha, alpha, alpha, alpha);
+    glBegin(GL_QUADS);
+}
+
+void endTextured() {
+    glEnd();
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glDisable(GL_TEXTURE_2D);
+}
+
 }  // namespace
 
 void beginFrame(int framebufferWidth, int framebufferHeight) {
@@ -159,15 +176,13 @@ void fillCircle(float cx, float cy, float radius, const Color& c) {
 }
 
 Texture::Texture(const std::string& path) {
-    int width = 0;
-    int height = 0;
     int channels = 0;
-    stbi_uc* pixels = stbi_load(path.c_str(), &width, &height, &channels, 4);
+    stbi_uc* pixels = stbi_load(path.c_str(), &width_, &height_, &channels, 4);
     if (!pixels) {
         throw std::runtime_error("Cannot load image " + path + ": " + stbi_failure_reason());
     }
     // Premultiplied alpha, so filtering never bleeds the colour of transparent pixels into the edges.
-    for (size_t i = 0; i < static_cast<size_t>(width) * height * 4; i += 4) {
+    for (size_t i = 0; i < static_cast<size_t>(width_) * height_ * 4; i += 4) {
         for (int c = 0; c < 3; ++c) {
             pixels[i + c] = static_cast<stbi_uc>((pixels[i + c] * pixels[i + 3] + 127) / 255);
         }
@@ -182,7 +197,7 @@ Texture::Texture(const std::string& path) {
     // Mipmaps keep the Full HD art smooth in a smaller window.
     glTexParameteri(GL_TEXTURE_2D, GL_GENERATE_MIPMAP, GL_TRUE);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width_, height_, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
     glBindTexture(GL_TEXTURE_2D, 0);
     stbi_image_free(pixels);
 }
@@ -191,14 +206,13 @@ Texture::~Texture() {
     glDeleteTextures(1, &id_);
 }
 
-void drawImage(const Texture& texture, const Rect& dest, float alpha) {
-    glEnable(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, texture.id());
-    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
+void setOffset(float x, float y) {
+    glLoadIdentity();
+    glTranslatef(x, y, 0.0f);
+}
 
-    glColor4f(alpha, alpha, alpha, alpha);  // premultiplied
-    glBegin(GL_QUADS);
+void drawImage(const Texture& texture, const Rect& dest, float alpha, Blend blend) {
+    beginTextured(texture, alpha, blend);
     glTexCoord2f(0.0f, 0.0f);
     glVertex2f(dest.x, dest.y);
     glTexCoord2f(1.0f, 0.0f);
@@ -207,11 +221,25 @@ void drawImage(const Texture& texture, const Rect& dest, float alpha) {
     glVertex2f(dest.x + dest.w, dest.y + dest.h);
     glTexCoord2f(0.0f, 1.0f);
     glVertex2f(dest.x, dest.y + dest.h);
-    glEnd();
+    endTextured();
+}
 
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glDisable(GL_TEXTURE_2D);
+void drawRegion(const Texture& texture, const Rect& source, float x, float y, float anchorX, float anchorY,
+                float rotation, Blend blend) {
+    const float c = std::cos(rotation);
+    const float s = std::sin(rotation);
+    auto corner = [&](float u, float v) {
+        const float px = u * source.w - anchorX;
+        const float py = v * source.h - anchorY;
+        glTexCoord2f((source.x + u * source.w) / texture.width(), (source.y + v * source.h) / texture.height());
+        glVertex2f(x + px * c - py * s, y + px * s + py * c);
+    };
+    beginTextured(texture, 1.0f, blend);
+    corner(0.0f, 0.0f);
+    corner(1.0f, 0.0f);
+    corner(1.0f, 1.0f);
+    corner(0.0f, 1.0f);
+    endTextured();
 }
 
 float textWidth(const std::string& text, float scale) {

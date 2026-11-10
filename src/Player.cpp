@@ -32,17 +32,17 @@ void Player::shrink() {
 float Player::width() const {
     switch (size_) {
         case PaddleSize::Short:
-            return 200.0f;
+            return 176.0f;
         case PaddleSize::Wide:
-            return 420.0f;
+            return 352.0f;
         default:
-            return 300.0f;
+            return 256.0f;
     }
 }
 
 void Player::keepInsideField() {
     const float half = width() * 0.5f;
-    centerX_ = std::clamp(centerX_, half, kFieldWidth - half);
+    centerX_ = std::clamp(centerX_, kWallLeft + half, kWallRight - half);
 }
 
 }  // namespace btb

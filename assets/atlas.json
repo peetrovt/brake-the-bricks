@@ -1,0 +1,389 @@
+{
+  "brick_shatter_sandstone": {
+    "file": "anim/brick_shatter_sandstone.png",
+    "frame_w": 320,
+    "frame_h": 256,
+    "frames": 18,
+    "fps": 30,
+    "loop": false,
+    "anchor": [
+      160,
+      112
+    ],
+    "note": "Play when brick is destroyed. anchor = brick centre inside frame."
+  },
+  "brick_shatter_limestone": {
+    "file": "anim/brick_shatter_limestone.png",
+    "frame_w": 320,
+    "frame_h": 256,
+    "frames": 18,
+    "fps": 30,
+    "loop": false,
+    "anchor": [
+      160,
+      112
+    ],
+    "note": "Play when brick is destroyed. anchor = brick centre inside frame."
+  },
+  "brick_shatter_granite": {
+    "file": "anim/brick_shatter_granite.png",
+    "frame_w": 320,
+    "frame_h": 256,
+    "frames": 18,
+    "fps": 30,
+    "loop": false,
+    "anchor": [
+      160,
+      112
+    ],
+    "note": "Play when brick is destroyed. anchor = brick centre inside frame."
+  },
+  "brick_shatter_jade": {
+    "file": "anim/brick_shatter_jade.png",
+    "frame_w": 320,
+    "frame_h": 256,
+    "frames": 18,
+    "fps": 30,
+    "loop": false,
+    "anchor": [
+      160,
+      112
+    ],
+    "note": "Play when brick is destroyed. anchor = brick centre inside frame."
+  },
+  "brick_shatter_gold": {
+    "file": "anim/brick_shatter_gold.png",
+    "frame_w": 320,
+    "frame_h": 256,
+    "frames": 18,
+    "fps": 30,
+    "loop": false,
+    "anchor": [
+      160,
+      112
+    ],
+    "note": "Play when brick is destroyed. anchor = brick centre inside frame."
+  },
+  "brick_hit_flash": {
+    "file": "anim/brick_hit_flash.png",
+    "frame_w": 128,
+    "frame_h": 48,
+    "frames": 6,
+    "fps": 30,
+    "loop": false,
+    "anchor": [
+      64,
+      24
+    ],
+    "note": "Overlay on any brick when hit but not destroyed (additive or normal blend). Combine with shake offsets.",
+    "shake_offsets": [
+      [
+        0,
+        0
+      ],
+      [
+        3,
+        -1
+      ],
+      [
+        -3,
+        1
+      ],
+      [
+        2,
+        0
+      ],
+      [
+        -1,
+        0
+      ],
+      [
+        0,
+        0
+      ]
+    ]
+  },
+  "brick_clang_obsidian": {
+    "file": "anim/brick_clang_obsidian.png",
+    "frame_w": 128,
+    "frame_h": 48,
+    "frames": 8,
+    "fps": 30,
+    "loop": false,
+    "anchor": [
+      64,
+      24
+    ],
+    "note": "Indestructible brick hit: metal shine sweep. Replace brick sprite while playing."
+  },
+  "impact_dust": {
+    "file": "anim/impact_dust.png",
+    "frame_w": 96,
+    "frame_h": 96,
+    "frames": 8,
+    "fps": 24,
+    "loop": false,
+    "anchor": [
+      48,
+      67
+    ],
+    "note": "Spawn at the ball contact point on a brick. Rotate so 'up' faces away from the brick."
+  },
+  "impact_spark": {
+    "file": "anim/impact_spark.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 8,
+    "fps": 30,
+    "loop": false,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Ball hits wall or paddle."
+  },
+  "paddle_glow_short": {
+    "file": "anim/paddle_glow_short.png",
+    "frame_w": 176,
+    "frame_h": 48,
+    "frames": 8,
+    "fps": 24,
+    "loop": false,
+    "anchor": [
+      88,
+      24
+    ],
+    "note": "Paddle sun inlay lights up when the ball bounces off it."
+  },
+  "paddle_glow_normal": {
+    "file": "anim/paddle_glow_normal.png",
+    "frame_w": 256,
+    "frame_h": 48,
+    "frames": 8,
+    "fps": 24,
+    "loop": false,
+    "anchor": [
+      128,
+      24
+    ],
+    "note": "Paddle sun inlay lights up when the ball bounces off it."
+  },
+  "paddle_glow_long": {
+    "file": "anim/paddle_glow_long.png",
+    "frame_w": 352,
+    "frame_h": 48,
+    "frames": 8,
+    "fps": 24,
+    "loop": false,
+    "anchor": [
+      176,
+      24
+    ],
+    "note": "Paddle sun inlay lights up when the ball bounces off it."
+  },
+  "torch_flame": {
+    "file": "anim/torch_flame.png",
+    "frame_w": 64,
+    "frame_h": 128,
+    "frames": 8,
+    "fps": 12,
+    "loop": true,
+    "anchor": [
+      32,
+      118
+    ],
+    "note": "Looping torch flame. Place anchor on top of each wall sconce. Pulse torch_glow.png alpha 0.8-1.0 along with it.",
+    "positions": [
+      {
+        "x": 50,
+        "y": 560
+      },
+      {
+        "x": 1870,
+        "y": 560
+      }
+    ]
+  },
+  "ball_fire": {
+    "file": "anim/ball_fire.png",
+    "frame_w": 96,
+    "frame_h": 96,
+    "frames": 8,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      48,
+      61
+    ],
+    "note": "Fireball power-up ball. Flame trail points UP in the sprite: rotate so it points opposite the velocity."
+  },
+  "ball_glow_pulse": {
+    "file": "anim/ball_glow_pulse.png",
+    "frame_w": 96,
+    "frame_h": 96,
+    "frames": 8,
+    "fps": 12,
+    "loop": true,
+    "anchor": [
+      48,
+      48
+    ],
+    "note": "Soft halo drawn under the ball (additive)."
+  },
+  "ball_lost": {
+    "file": "anim/ball_lost.png",
+    "frame_w": 128,
+    "frame_h": 128,
+    "frames": 14,
+    "fps": 30,
+    "loop": false,
+    "anchor": [
+      64,
+      40
+    ],
+    "note": "Ball falls out of play: sun-stone crumbles."
+  },
+  "powerup_expand": {
+    "file": "anim/powerup_expand.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
+  "powerup_shrink": {
+    "file": "anim/powerup_shrink.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
+  "powerup_multiball": {
+    "file": "anim/powerup_multiball.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
+  "powerup_slow": {
+    "file": "anim/powerup_slow.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
+  "powerup_fireball": {
+    "file": "anim/powerup_fireball.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
+  "powerup_life": {
+    "file": "anim/powerup_life.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
+  "sparkle_burst": {
+    "file": "anim/sparkle_burst.png",
+    "frame_w": 256,
+    "frame_h": 256,
+    "frames": 16,
+    "fps": 24,
+    "loop": false,
+    "anchor": [
+      128,
+      128
+    ],
+    "note": "Gold sparkles: combos, level clear, bonus pickups."
+  },
+  "powerup_laser": {
+    "file": "anim/powerup_laser.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
+  "powerup_barrier": {
+    "file": "anim/powerup_barrier.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
+  "powerup_catch": {
+    "file": "anim/powerup_catch.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
+  "powerup_bonus": {
+    "file": "anim/powerup_bonus.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  }
+}

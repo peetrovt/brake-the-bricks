@@ -1,7 +1,7 @@
 # Brake The Bricks (C++)
 
 A C++17 remake of the Java/Swing game in `../BrakeTheBricks`, using GLFW + OpenGL 2.1 and the Full HD art pack
-in `assets/images` (see its README).
+in `assets` (see its README).
 
 ## Build and run
 
@@ -32,16 +32,16 @@ power-up in turn.
 
 - Ten levels: rectangle, wall, triangle, rhombus, hexagon, hourglass, arrow, cross, bars, fortress. The ball gets
   faster each level.
-- Some bricks take two hits (they show cracks after the first). Metal bricks never break and are not needed to
-  finish a level.
-- 10 points per broken brick, 5 per crack, 10 per caught power-up. One broken brick in seven drops a power-up.
+- Sandstone takes one hit, limestone two and granite three, showing cracks along the way. Jade always drops a
+  power-up and gold is worth 50 extra points. Obsidian never breaks and is not needed to finish a level.
+- 10 points per broken brick, 5 per crack, 10 per caught power-up.
 - Where the ball hits the paddle sets its angle: the ends send it off at up to 60 degrees.
 
 | Power-up | Effect |
 | --- | --- |
 | Extra life | +1 life |
 | Multiball | Every ball splits into 3 (up to 24 balls) |
-| Expand / Shrink | Paddle one size wider / narrower (200, 300, 420 px) until a life is lost |
+| Expand / Shrink | Paddle one size wider / narrower (176, 256, 352 px) until a life is lost |
 | Laser | 12 s: Space shoots a bolt from the middle of the paddle |
 | Fireball | 8 s: balls smash through breakable bricks without bouncing |
 | Slow | 10 s: balls at 65% speed |
@@ -56,7 +56,8 @@ Running effects are shown top right with a bar for the time left.
 - `src/Game.*`: game states, collisions, power-ups, scoring, drawing
 - `src/Level.*`: the ten brick layouts and per-level speed and brick mix
 - `src/Ball.*`, `src/Player.*`, `src/Brick.*`, `src/PowerUp.*`: the game objects
+- `src/Animation.*`: horizontal sprite strips, with the frame data from `assets/atlas.json` passed in by `Game`
 - `src/Renderer.*`: OpenGL drawing, PNG textures, pixel font, TrueType fonts
-- `assets/images/`: the art pack
+- `assets/`: the Ancient Temple art pack
 - `assets/fonts/`: Liberation Sans (Arial-compatible), used for all the game's text, and DejaVu Sans (see the `LICENSE-*.txt` files)
 - `third_party/stb/`: `stb_image.h` for PNG loading, `stb_truetype.h` for fonts

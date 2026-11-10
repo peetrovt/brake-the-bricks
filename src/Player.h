@@ -4,14 +4,14 @@
 
 namespace btb {
 
-// Matches paddle-short.png, paddle.png and paddle-wide.png.
+// Matches paddle_short.png, paddle_normal.png and paddle_long.png.
 enum class PaddleSize { Short, Normal, Wide };
 
 // The paddle.
 class Player {
 public:
     static constexpr float kHeight = 48.0f;
-    static constexpr float kTop = 972.0f;
+    static constexpr float kTop = 986.0f;
     static constexpr float kSpeed = 1200.0f;  // pixels per second
 
     Player() { reset(); }
@@ -26,7 +26,6 @@ public:
     PaddleSize size() const { return size_; }
     float centerX() const { return centerX_; }
     float width() const;
-    // The collision box, without the sprite's glow.
     Rect rect() const { return {centerX_ - width() * 0.5f, kTop, width(), kHeight}; }
 
 private:

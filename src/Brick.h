@@ -4,28 +4,36 @@
 
 namespace btb {
 
-// The colours of the art pack, in the order the rows of a level use them.
-enum class BrickColour { Red, Orange, Yellow, Green, Cyan, Blue, Purple };
-constexpr int kBrickColourCount = 7;
+// The stones of the art pack. Jade always drops a power-up, gold is worth extra points and obsidian never breaks.
+enum class BrickType { Sandstone, Limestone, Granite, Jade, Gold, Obsidian };
+constexpr int kBrickTypeCount = 6;
+constexpr int kMaxBrickVariants = 4;
+constexpr int kMaxBrickHits = 3;
+
+// How many hits a type takes, which is also how many sprites (uncracked plus crack stages) each variant has.
+int brickMaxHits(BrickType type);
+// How many differently carved sprites a type has.
+int brickVariants(BrickType type);
 
 struct Brick {
-    static constexpr float kWidth = 120.0f;
-    static constexpr float kHeight = 60.0f;
-    static constexpr float kGap = 6.0f;
+    static constexpr float kWidth = 128.0f;
+    static constexpr float kHeight = 48.0f;
 
     float x;
     float y;
-    BrickColour colour;
-    int hitsLeft;   // 2 for a tough brick that has not been hit yet
-    bool cracked;   // a tough brick that has been hit once
-    bool metal;     // unbreakable, and not needed to finish the level
+    BrickType type;
+    int variant;
+    int hitsLeft;
+    float hitSeconds = -1.0f;  // time since the last hit that did not break it; negative when not animating
 
-    // `toughPercent` and `metalPercent` are the chances of a 2-hit brick and of a metal brick.
-    static Brick make(float x, float y, BrickColour colour, int toughPercent, int metalPercent);
+    // `toughPercent` and `metalPercent` are the chances of a multi-hit brick and of an obsidian brick.
+    static Brick make(float x, float y, int toughPercent, int metalPercent);
 
     // Returns true when the hit destroys the brick. `smash` (fireball) breaks tough bricks at once.
     bool hit(bool smash);
 
+    bool unbreakable() const { return type == BrickType::Obsidian; }
+    int cracks() const { return brickMaxHits(type) - hitsLeft; }
     Rect rect() const { return {x, y, kWidth, kHeight}; }
     float centerX() const { return x + kWidth * 0.5f; }
     float centerY() const { return y + kHeight * 0.5f; }

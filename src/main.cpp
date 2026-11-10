@@ -20,17 +20,16 @@ struct WindowedPlacement {
 
 WindowedPlacement windowed;
 
-// assets/ next to the executable (copied there by the build), else the one in the source tree.
-std::string findAssetsDir() {
+// The folder holding assets/ : next to the executable (copied there by the build), else the source tree.
+std::string findDataDir() {
     std::error_code error;
     std::filesystem::path exe = std::filesystem::read_symlink("/proc/self/exe", error);
     if (!error) {
-        std::filesystem::path besideExe = exe.parent_path() / "assets";
-        if (std::filesystem::is_directory(besideExe, error)) {
-            return besideExe.string();
+        if (std::filesystem::is_directory(exe.parent_path() / "assets", error)) {
+            return exe.parent_path().string();
         }
     }
-    return BTB_SOURCE_ASSETS_DIR;
+    return BTB_SOURCE_DIR;
 }
 
 void toggleFullscreen(GLFWwindow* window) {
@@ -90,7 +89,7 @@ int main() {
 
     int exitCode = 0;
     try {
-        btb::Game game(findAssetsDir());
+        btb::Game game(findDataDir());
         glfwSetWindowUserPointer(window, &game);
         glfwSetKeyCallback(window, onKey);
 

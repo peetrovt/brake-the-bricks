@@ -21,6 +21,7 @@ endif()
 
 add_executable(brake_the_bricks
     src/main.cpp
+    src/Animation.cpp
     src/Ball.cpp
     src/Brick.cpp
     src/Game.cpp
@@ -33,11 +34,10 @@ add_executable(brake_the_bricks
 target_include_directories(brake_the_bricks PRIVATE src third_party)
 target_link_libraries(brake_the_bricks PRIVATE OpenGL::GL glfw)
 target_compile_options(brake_the_bricks PRIVATE -Wall -Wextra)
-# Used when the executable runs from somewhere without an assets/ folder next to it.
-target_compile_definitions(brake_the_bricks PRIVATE BTB_SOURCE_ASSETS_DIR="${CMAKE_SOURCE_DIR}/assets")
+# Used when the executable runs from somewhere without the art next to it.
+target_compile_definitions(brake_the_bricks PRIVATE BTB_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 
-# The game looks for assets/ next to the executable first. Re-copied on every build so replaced or deleted
-# images never linger.
+
 add_custom_target(copy_assets ALL
     COMMAND ${CMAKE_COMMAND} -E remove_directory ${CMAKE_CURRENT_BINARY_DIR}/assets
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_SOURCE_DIR}/assets ${CMAKE_CURRENT_BINARY_DIR}/assets)

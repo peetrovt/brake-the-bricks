@@ -10,7 +10,7 @@ struct LevelInfo {
     const char* figure;
     std::vector<int> rows;  // bricks per row, top to bottom; each row is centred
     float ballSpeed;        // pixels per second
-    int toughPercent;       // chance of a 2-hit brick
+    int toughPercent;       // chance of a multi-hit brick
     int metalPercent;       // chance of an unbreakable brick
 };
 

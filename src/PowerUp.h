@@ -4,13 +4,13 @@
 
 namespace btb {
 
-// One per powerup-*.png in the art pack.
+// One per powerups/powerup_*.png in the art pack.
 enum class PowerUpKind { ExtraLife, Multiball, Expand, Shrink, Laser, Fireball, Slow, Barrier, Catch, Bonus };
 constexpr int kPowerUpKindCount = 10;
 
 // A bonus orb that drops from a broken brick and takes effect when the paddle catches it.
 struct PowerUp {
-    static constexpr float kRadius = 48.0f;
+    static constexpr float kRadius = 32.0f;
 
     float x;  // centre
     float y;
