@@ -21,6 +21,7 @@ The field is 1920x1080. The window opens at 80% of the screen and keeps the aspe
 | Enter | Start / pause / resume / next level |
 | Space | Launch, fire lasers, release a caught ball |
 | H or F1 | Help |
+| M | Sound on / off |
 | F11 | Fullscreen |
 | Esc | Exit |
 
@@ -57,12 +58,16 @@ Running effects are shown top right with a bar for the time left.
 - `src/Ball.*`, `src/Player.*`, `src/Brick.*`, `src/PowerUp.*`: the game objects
 - `src/Animation.*`: horizontal sprite strips, with the frame data from `assets/atlas.json` passed in by `Game`
 - `src/Renderer.*`: OpenGL drawing, PNG textures, pixel font, TrueType fonts
+- `src/Audio.*`: loads the `.ogg` sounds and mixes them on the audio thread (silent if there is no sound device)
 - `assets/`: the Ancient Temple art pack
+- `assets/sounds/`: the sound effects and the looping temple ambience (Ogg Vorbis)
+- `tools/sfx/`: `gen_sfx.py`, which synthesises the sounds, and the WAV masters it writes
+- `third_party/miniaudio/`: `miniaudio.h` for audio output
 - `assets/fonts/`: Liberation Sans (Arial-compatible), used for all the game's text, and DejaVu Sans (see the `LICENSE-*.txt` files)
-- `third_party/stb/`: `stb_image.h` for PNG loading, `stb_truetype.h` for fonts
+- `third_party/stb/`: `stb_image.h` for PNG loading, `stb_truetype.h` for fonts, `stb_vorbis.c` for Ogg decoding
 
 ## Licence
 
 Copyright (C) 2026 peetrovt. Licensed under the GNU GPL v3 or later, see [LICENSE](LICENSE).
 
-`third_party/stb/` (MIT) and `assets/fonts/` (SIL OFL 1.1 / DejaVu) keep their own licences.
+`third_party/stb/` (MIT), `third_party/miniaudio/` (public domain / MIT-0) and `assets/fonts/` (SIL OFL 1.1 / DejaVu) keep their own licences.

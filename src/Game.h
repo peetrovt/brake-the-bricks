@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Animation.h"
+#include "Audio.h"
 #include "Ball.h"
 #include "Brick.h"
 #include "GameConstants.h"
@@ -37,6 +38,14 @@ private:
         GameOver,
         Won,
     };
+
+    // In the order of kSoundFiles in Game.cpp.
+    enum class Sound {
+        PaddleHit, WallBounce, BrickHit1, BrickHit2, BrickHit3, BrickBreak1, BrickBreak2, BrickBreak3, GoldBrickHit,
+        BallLaunch, PowerUpSpawn, PowerUpCollect, PowerDownCurse, ExtraLife, Combo, LifeLost, LevelComplete, GameOver,
+        UiClick, UiHover, UiPause, UiStoneDoor, AmbientLoop,
+    };
+    static constexpr int kSoundCount = 23;
 
     // Power-ups that last for a while.
     enum class Effect { Fireball, Laser, Barrier, Catch, Slow };
@@ -96,10 +105,15 @@ private:
     Particle makeDustMote(float age) const;
     void updateVisuals(float seconds);
     void fire();
-    void releaseStuckBalls();
+    // Returns true if any ball was stuck to the paddle.
+    bool releaseStuckBalls();
     void loseLife();
     void applyPowerUp(const PowerUp& powerUp);
     void showMessage(State state, const std::string& message);
+    // `x` is where on the field it happens, for the stereo position.
+    void playSound(Sound sound, float x = kFieldWidth * 0.5f, float volume = 1.0f);
+    // One of three numbered variants at random, so repeated hits do not sound mechanical.
+    void playVariant(Sound first, float x, float volume = 1.0f);
 
     bool active(Effect effect) const { return effectSeconds_[static_cast<int>(effect)] > 0.0f; }
     float ballSpeed() const;
@@ -113,6 +127,9 @@ private:
     void drawBanner(const std::string& text) const;
     void drawHud() const;
     void drawHelp() const;
+
+    audio::Mixer mixer_;
+    std::array<int, kSoundCount> sounds_{};  // clip ids, -1 if the file could not be loaded
 
     std::unique_ptr<gfx::Font> font_;
     std::unique_ptr<gfx::Texture> background_;
@@ -151,6 +168,8 @@ private:
     std::vector<FloatingText> floatingTexts_;
     std::array<float, kEffectCount> effectSeconds_{};  // time left of each effect
     float laserCooldown_ = 0.0f;
+    int comboCount_ = 0;         // bricks broken in quick succession
+    float comboSeconds_ = 0.0f;  // time left to break the next one and keep the combo going
 
     std::vector<OneShot> oneShots_;
     std::vector<Particle> dustMotes_;

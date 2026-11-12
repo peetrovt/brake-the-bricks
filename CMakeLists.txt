@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.10)
-project(brake_the_bricks CXX)
+project(brake_the_bricks C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,9 +19,23 @@ if(NOT OPENGL_FOUND OR NOT glfw3_FOUND)
         "then delete build/CMakeCache.txt and configure again.")
 endif()
 
+# Sound: miniaudio opens the output device (it loads ALSA/PulseAudio at run time, so no -dev packages are needed)
+# and stb_vorbis decodes the .ogg files. Third-party code, so built without our warnings.
+find_package(Threads REQUIRED)
+add_library(btb_audio_backend STATIC
+    third_party/miniaudio/miniaudio_impl.c
+    third_party/stb/stb_vorbis.c
+)
+target_include_directories(btb_audio_backend PUBLIC third_party)
+target_compile_definitions(btb_audio_backend PUBLIC
+    MA_NO_DECODING MA_NO_ENCODING MA_NO_GENERATION MA_NO_RESOURCE_MANAGER MA_NO_NODE_GRAPH MA_NO_ENGINE)
+target_compile_options(btb_audio_backend PRIVATE -w)
+target_link_libraries(btb_audio_backend PUBLIC Threads::Threads ${CMAKE_DL_LIBS} m)
+
 add_executable(brake_the_bricks
     src/main.cpp
     src/Animation.cpp
+    src/Audio.cpp
     src/Ball.cpp
     src/Brick.cpp
     src/Game.cpp
@@ -32,7 +46,7 @@ add_executable(brake_the_bricks
     src/Renderer.cpp
 )
 target_include_directories(brake_the_bricks PRIVATE src third_party)
-target_link_libraries(brake_the_bricks PRIVATE OpenGL::GL glfw)
+target_link_libraries(brake_the_bricks PRIVATE OpenGL::GL glfw btb_audio_backend)
 target_compile_options(brake_the_bricks PRIVATE -Wall -Wextra)
 # Used when the executable runs from somewhere without the art next to it.
 target_compile_definitions(brake_the_bricks PRIVATE BTB_SOURCE_DIR="${CMAKE_SOURCE_DIR}")

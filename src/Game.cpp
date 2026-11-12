@@ -61,6 +61,20 @@ constexpr float kSparkleSeconds = 3.0f;  // how long a cleared level keeps spark
 constexpr std::array<std::array<float, 2>, 6> kHitShake = {
     {{0.0f, 0.0f}, {3.0f, -1.0f}, {-3.0f, 1.0f}, {2.0f, 0.0f}, {-1.0f, 0.0f}, {0.0f, 0.0f}}};
 
+// In Game::Sound order; files in assets/sounds/.
+constexpr std::array<const char*, 23> kSoundFiles = {
+    "paddle_hit",     "wall_bounce",    "brick_hit_1",     "brick_hit_2",     "brick_hit_3", "brick_break_1",
+    "brick_break_2",  "brick_break_3",  "gold_brick_hit",  "ball_launch",     "powerup_spawn", "powerup_collect",
+    "powerdown_curse", "extra_life",    "combo",           "life_lost",       "level_complete", "game_over",
+    "ui_click",       "ui_hover",       "ui_pause",        "ui_stone_door",   "ambient_temple_loop",
+};
+constexpr float kMusicVolume = 0.35f;
+// How far left/right sounds at the walls are panned (1 would be fully to one side).
+constexpr float kPanWidth = 0.6f;
+// A combo: this many bricks broken, each within kComboSeconds of the last one.
+constexpr int kComboBricks = 4;
+constexpr float kComboSeconds = 0.6f;
+
 const gfx::Color kMessageColor{1.0f, 0.82f, 0.42f, 1.0f};
 const gfx::Color kHudColor{0.99f, 0.87f, 0.58f, 1.0f};
 const gfx::Color kWhite{1.0f, 1.0f, 1.0f, 1.0f};
@@ -157,6 +171,12 @@ Game::Game(const std::string& dataDir) {
         dustMotes_.push_back(makeDustMote(randomFloat(0.0f, 4.0f)));
     }
 
+    static_assert(kSoundFiles.size() == kSoundCount, "one file per Game::Sound");
+    for (int i = 0; i < kSoundCount; ++i) {
+        sounds_[i] = mixer_.load(dataDir + "/assets/sounds/" + kSoundFiles[i] + ".ogg");
+    }
+    mixer_.loop(sounds_[static_cast<int>(Sound::AmbientLoop)], kMusicVolume);
+
     startLevel();
     showMessage(State::Ready, "Press Enter to Start!");
 }
@@ -186,14 +206,30 @@ void Game::showMessage(State state, const std::string& message) {
     bannerSeconds_ = 0.0f;
 }
 
+void Game::playSound(Sound sound, float x, float volume) {
+    const float pan = (x - kFieldWidth * 0.5f) / (kFieldWidth * 0.5f) * kPanWidth;
+    mixer_.play(sounds_[static_cast<int>(sound)], volume, pan);
+}
+
+void Game::playVariant(Sound first, float x, float volume) {
+    playSound(static_cast<Sound>(static_cast<int>(first) + randomInt(3)), x, volume);
+}
+
 void Game::launch() {
     state_ = State::Playing;
-    releaseStuckBalls();
+    if (releaseStuckBalls()) {
+        playSound(Sound::BallLaunch, player_.centerX());
+    }
 }
 
 void Game::onKeyPress(int key) {
     if (key == GLFW_KEY_H || key == GLFW_KEY_F1) {
         helpVisible_ = !helpVisible_;
+        playSound(Sound::UiHover);
+        return;
+    }
+    if (key == GLFW_KEY_M) {
+        mixer_.setMuted(!mixer_.muted());
         return;
     }
     if (helpVisible_) {
@@ -205,20 +241,26 @@ void Game::onKeyPress(int key) {
         case GLFW_KEY_KP_ENTER:
             switch (state_) {
                 case State::Ready:
+                    playSound(Sound::UiStoneDoor);
+                    launch();
+                    break;
                 case State::LifeLost:
                     launch();
                     break;
                 case State::Paused:
                     state_ = State::Playing;
+                    playSound(Sound::UiPause);
                     break;
                 case State::Playing:
                     showMessage(State::Paused, "PAUSE");
+                    playSound(Sound::UiPause);
                     break;
                 case State::GameOver:
                     // Like the original, a new game continues from the level that was lost.
                     score_ = 0;
                     lives_ = kPlayerDefaultLives;
                     startLevel();
+                    playSound(Sound::UiStoneDoor);
                     launch();
                     break;
                 case State::Won:
@@ -226,10 +268,12 @@ void Game::onKeyPress(int key) {
                     score_ = 0;
                     lives_ = kPlayerDefaultLives;
                     startLevel();
+                    playSound(Sound::UiStoneDoor);
                     launch();
                     break;
                 case State::LevelComplete:
                     startLevel();
+                    playSound(Sound::UiStoneDoor);
                     launch();
                     break;
             }
@@ -256,6 +300,7 @@ void Game::onKeyPress(int key) {
             break;
         case GLFW_KEY_R:
             powerUps_.push_back(PowerUp::makeRandom(player_.centerX(), Player::kTop - 400.0f));
+            playSound(Sound::PowerUpSpawn, player_.centerX());
             break;
         default:
             // 1..9 and 0 drop each power-up kind in turn.
@@ -263,6 +308,7 @@ void Game::onKeyPress(int key) {
                 const int kind = (key - GLFW_KEY_0 + kPowerUpKindCount - 1) % kPowerUpKindCount;
                 powerUps_.push_back(
                     PowerUp::make(player_.centerX(), Player::kTop - 400.0f, static_cast<PowerUpKind>(kind)));
+                playSound(Sound::PowerUpSpawn, player_.centerX());
             }
             break;
     }
@@ -313,6 +359,7 @@ void Game::step(int moveDirection) {
                 it = it->age > kFloatingTextSeconds ? floatingTexts_.erase(it) : it + 1;
             }
             if (levelCleared()) {
+                playSound(Sound::LevelComplete);
                 if (levelIndex_ < static_cast<int>(levels().size()) - 1) {
                     ++levelIndex_;
                     showMessage(State::LevelComplete, "Press Enter for next Level!");
@@ -351,20 +398,24 @@ void Game::moveBalls(float seconds) {
             ball.x = kWallLeft + r;
             ball.dx = std::abs(ball.dx);
             spawn(*impactSpark_, kWallLeft, ball.y);
+            playSound(Sound::WallBounce, kWallLeft);
         } else if (ball.x > kWallRight - r) {
             ball.x = kWallRight - r;
             ball.dx = -std::abs(ball.dx);
             spawn(*impactSpark_, kWallRight, ball.y);
+            playSound(Sound::WallBounce, kWallRight);
         }
         if (ball.y < kCeiling + r) {
             ball.y = kCeiling + r;
             ball.dy = std::abs(ball.dy);
             spawn(*impactSpark_, ball.x, kCeiling);
+            playSound(Sound::WallBounce, ball.x);
         }
         if (active(Effect::Barrier) && ball.dy > 0.0f && ball.y + r > kBarrierY) {
             ball.y = kBarrierY - r;
             ball.dy = -std::abs(ball.dy);
             spawn(*impactSpark_, ball.x, kBarrierY);
+            playSound(Sound::WallBounce, ball.x);
         }
 
         if (ball.dy > 0.0f && paddle.intersectsCircle(ball.x, ball.y, r)) {
@@ -373,6 +424,7 @@ void Game::moveBalls(float seconds) {
                 ball.y = paddle.y - r;
                 paddleGlowSeconds_ = 0.0f;
                 spawn(*impactSpark_, ball.x, paddle.y);
+                playSound(Sound::PaddleHit, ball.x);
                 if (active(Effect::Catch)) {
                     ball.stuck = true;
                     ball.stuckOffset = offset;
@@ -418,6 +470,7 @@ bool Game::hitBrick(size_t index, bool smash, float fromX, float fromY) {
     if (brick.unbreakable()) {
         brick.hitSeconds = 0.0f;
         spawn(*impactSpark_, hitX, hitY);
+        playSound(Sound::GoldBrickHit, hitX, 0.7f);  // the metal clang
         return false;
     }
     if (!brick.hit(smash)) {
@@ -425,6 +478,7 @@ bool Game::hitBrick(size_t index, bool smash, float fromX, float fromY) {
         brick.hitSeconds = 0.0f;
         // The dust sprite billows upwards: turn that side away from the brick.
         spawn(*impactDust_, hitX, hitY, std::atan2(fromY - hitY, fromX - hitX) + kPi * 0.5f);
+        playVariant(Sound::BrickHit1, hitX);
         return false;
     }
 
@@ -434,13 +488,22 @@ bool Game::hitBrick(size_t index, bool smash, float fromX, float fromY) {
     bricks_.erase(bricks_.begin() + static_cast<std::ptrdiff_t>(index));
     score_ += 10;
     spawn(*shatterAnimations_[static_cast<int>(type)], x, y);
+    playVariant(Sound::BrickBreak1, x);
     if (type == BrickType::Gold) {
         score_ += kGoldBonus;
         spawn(*sparkleBurst_, x, y, 0.0f, gfx::Blend::Additive);
+        playSound(Sound::GoldBrickHit, x);
     }
     shakeScreen(type == BrickType::Gold ? kShakeGold : kShakeBrick);
     if (type == BrickType::Jade) {
         powerUps_.push_back(PowerUp::makeRandom(x, y));
+        playSound(Sound::PowerUpSpawn, x);
+    }
+
+    comboCount_ = comboSeconds_ > 0.0f ? comboCount_ + 1 : 1;
+    comboSeconds_ = kComboSeconds;
+    if (comboCount_ % kComboBricks == 0) {
+        playSound(Sound::Combo, x);
     }
     return true;
 }
@@ -582,11 +645,12 @@ void Game::updateEffects(float seconds) {
             continue;
         }
         left -= seconds;
-        if (left <= 0.0f && static_cast<Effect>(effect) == Effect::Catch) {
-            releaseStuckBalls();
+        if (left <= 0.0f && static_cast<Effect>(effect) == Effect::Catch && releaseStuckBalls()) {
+            playSound(Sound::BallLaunch, player_.centerX());
         }
     }
     laserCooldown_ = std::max(0.0f, laserCooldown_ - seconds);
+    comboSeconds_ = std::max(0.0f, comboSeconds_ - seconds);
 }
 
 void Game::applyPowerUp(const PowerUp& powerUp) {
@@ -595,6 +659,17 @@ void Game::applyPowerUp(const PowerUp& powerUp) {
     const auto recent = std::count_if(floatingTexts_.begin(), floatingTexts_.end(),
                                       [](const FloatingText& text) { return text.age < 0.4f; });
     floatingTexts_.push_back({powerUpName(powerUp.kind), powerUp.x, Player::kTop - 60.0f - 40.0f * recent, 0.0f});
+    switch (powerUp.kind) {
+        case PowerUpKind::ExtraLife:
+            playSound(Sound::ExtraLife, powerUp.x);
+            break;
+        case PowerUpKind::Shrink:
+            playSound(Sound::PowerDownCurse, powerUp.x);
+            break;
+        default:
+            playSound(Sound::PowerUpCollect, powerUp.x);
+            break;
+    }
 
     switch (powerUp.kind) {
         case PowerUpKind::ExtraLife:
@@ -644,33 +719,41 @@ void Game::applyPowerUp(const PowerUp& powerUp) {
 }
 
 void Game::fire() {
-    releaseStuckBalls();
+    if (releaseStuckBalls()) {
+        playSound(Sound::BallLaunch, player_.centerX());
+    }
     if (active(Effect::Laser) && laserCooldown_ <= 0.0f) {
         lasers_.push_back({player_.centerX(), Player::kTop - kLaserHeight});
         laserCooldown_ = kLaserCooldown;
+        playSound(Sound::UiClick, player_.centerX());
     }
 }
 
-void Game::releaseStuckBalls() {
+bool Game::releaseStuckBalls() {
+    bool released = false;
     for (Ball& ball : balls_) {
         if (!ball.stuck) {
             continue;
         }
         ball.stuck = false;
+        released = true;
         aimFromPaddle(ball, ball.stuckOffset, player_);
         // Straight up would just bounce between the paddle and the ceiling.
         if (std::abs(ball.dx) < 0.17f) {
             ball.setAngle((randomInt(2) == 0 ? -1.0f : 1.0f) * randomFloat(0.26f, 0.52f));
         }
     }
+    return released;
 }
 
 void Game::loseLife() {
     if (--lives_ > 0) {
         resetPaddleAndBall();
         showMessage(State::LifeLost, "Lives left: " + std::to_string(lives_));
+        playSound(Sound::LifeLost);
     } else {
         showMessage(State::GameOver, "GAME OVER");
+        playSound(Sound::GameOver);
     }
 }
 
@@ -884,7 +967,7 @@ void Game::drawHelp() const {
     };
     centred("Brake The Bricks 2.0", panel.y + 30.0f, 66.0f, kMessageColor);
     centred("Left / Right - Move    Enter - Start / Pause", panel.y + 115.0f, 33.0f, kWhite);
-    centred("Space - Fire / Release    F11 - Fullscreen    Esc - Exit", panel.y + 155.0f, 33.0f, kWhite);
+    centred("Space - Fire / Release    M - Sound    F11 - Fullscreen    Esc - Exit", panel.y + 155.0f, 33.0f, kWhite);
 
     const float icon = 64.0f;
     const float rowHeight = 100.0f;
