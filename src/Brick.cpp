@@ -23,8 +23,8 @@ BrickType rollType(int toughPercent, int metalPercent) {
     if (randomInt(100) >= toughPercent) {
         return BrickType::Sandstone;
     }
-    // The harder the level, the more of its tough bricks are the 3-hit kind.
-    return randomInt(100) < toughPercent ? BrickType::Granite : BrickType::Limestone;
+    // The harder the level, the more of its tough bricks are the 3-hit kind, but most stay 2-hit.
+    return randomInt(100) < toughPercent / 2 ? BrickType::Granite : BrickType::Limestone;
 }
 
 }  // namespace
