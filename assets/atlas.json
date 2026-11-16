@@ -334,6 +334,19 @@
     ],
     "note": "Gold sparkles: combos, level clear, bonus pickups."
   },
+  "powerup_bonus": {
+    "file": "anim/powerup_bonus.png",
+    "frame_w": 64,
+    "frame_h": 64,
+    "frames": 12,
+    "fps": 15,
+    "loop": true,
+    "anchor": [
+      32,
+      32
+    ],
+    "note": "Falling power-up tablet with light shimmer."
+  },
   "powerup_laser": {
     "file": "anim/powerup_laser.png",
     "frame_w": 64,
@@ -347,43 +360,17 @@
     ],
     "note": "Falling power-up tablet with light shimmer."
   },
-  "powerup_barrier": {
-    "file": "anim/powerup_barrier.png",
-    "frame_w": 64,
+  "laser_shot": {
+    "file": "anim/laser_shot.png",
+    "frame_w": 16,
     "frame_h": 64,
-    "frames": 12,
-    "fps": 15,
+    "frames": 4,
+    "fps": 20,
     "loop": true,
     "anchor": [
-      32,
+      8,
       32
     ],
-    "note": "Falling power-up tablet with light shimmer."
-  },
-  "powerup_catch": {
-    "file": "anim/powerup_catch.png",
-    "frame_w": 64,
-    "frame_h": 64,
-    "frames": 12,
-    "fps": 15,
-    "loop": true,
-    "anchor": [
-      32,
-      32
-    ],
-    "note": "Falling power-up tablet with light shimmer."
-  },
-  "powerup_bonus": {
-    "file": "anim/powerup_bonus.png",
-    "frame_w": 64,
-    "frame_h": 64,
-    "frames": 12,
-    "fps": 15,
-    "loop": true,
-    "anchor": [
-      32,
-      32
-    ],
-    "note": "Falling power-up tablet with light shimmer."
+    "note": "Laser projectile fired upward from the middle of the paddle."
   }
 }

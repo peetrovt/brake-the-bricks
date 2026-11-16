@@ -19,14 +19,14 @@ The field is 1920x1080. The window opens at 80% of the screen and keeps the aspe
 | --- | --- |
 | Left / Right | Move the paddle |
 | Enter | Start / pause / resume / next level |
-| Space | Launch, fire lasers, release a caught ball |
+| Space | Launch, fire lasers |
 | H or F1 | Help |
 | M | Sound on / off |
 | F11 | Fullscreen |
 | Esc | Exit |
 
-Debug keys: Q clears the level, W/E shrinks/grows the paddle, R drops a random power-up, 1-9 and 0 drop each
-power-up in turn.
+Debug keys: Q clears the level, W/E shrinks/grows the paddle, R drops a random power-up, 1-8 drop each power-up
+in turn.
 
 ## Rules
 
@@ -42,11 +42,9 @@ power-up in turn.
 | Extra life | +1 life |
 | Multiball | Every ball splits into 3 (up to 24 balls) |
 | Expand / Shrink | Paddle one size wider / narrower (176, 256, 352 px) until a life is lost |
-| Laser | 12 s: Space shoots a bolt from the middle of the paddle |
+| Laser | 12 s: Space shoots a laser from the middle of the paddle |
 | Fireball | 8 s: balls smash through breakable bricks without bouncing |
 | Slow | 10 s: balls at 65% speed |
-| Barrier | 15 s: a wall below the paddle bounces balls back |
-| Catch | 15 s: balls stick to the paddle; Space releases them |
 | Bonus | +500 points |
 
 Running effects are shown top right with a bar for the time left.
@@ -61,7 +59,6 @@ Running effects are shown top right with a bar for the time left.
 - `src/Audio.*`: loads the `.ogg` sounds and mixes them on the audio thread (silent if there is no sound device)
 - `assets/`: the Ancient Temple art pack
 - `assets/sounds/`: the sound effects and the looping temple ambience (Ogg Vorbis)
-- `tools/sfx/`: `gen_sfx.py`, which synthesises the sounds, and the WAV masters it writes
 - `third_party/miniaudio/`: `miniaudio.h` for audio output
 - `assets/fonts/`: Liberation Sans (Arial-compatible), used for all the game's text, and DejaVu Sans (see the `LICENSE-*.txt` files)
 - `third_party/stb/`: `stb_image.h` for PNG loading, `stb_truetype.h` for fonts, `stb_vorbis.c` for Ogg decoding

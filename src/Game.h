@@ -48,12 +48,12 @@ private:
     static constexpr int kSoundCount = 23;
 
     // Power-ups that last for a while.
-    enum class Effect { Fireball, Laser, Barrier, Catch, Slow };
-    static constexpr int kEffectCount = 5;
+    enum class Effect { Fireball, Laser, Slow };
+    static constexpr int kEffectCount = 3;
 
     struct Laser {
         float x;  // centre
-        float y;  // top
+        float y;  // top of the hitbox
     };
 
     // A short label that rises and fades where a power-up was caught.
@@ -159,6 +159,7 @@ private:
     std::unique_ptr<Animation> ballLost_;
     std::array<std::unique_ptr<Animation>, kPowerUpKindCount> powerUpAnimations_;
     std::unique_ptr<Animation> sparkleBurst_;
+    std::unique_ptr<Animation> laserShot_;
 
     Player player_;
     std::vector<Ball> balls_;

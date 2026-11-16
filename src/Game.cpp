@@ -19,12 +19,10 @@ constexpr size_t kMaxBalls = 24;
 constexpr float kSlowFactor = 0.65f;
 
 constexpr float kLaserSpeed = 1500.0f;
+// The hitbox: the bright core of the 16x64 laser_shot sprite, whose ends fade out.
 constexpr float kLaserWidth = 6.0f;
-constexpr float kLaserHeight = 28.0f;
+constexpr float kLaserHeight = 48.0f;
 constexpr float kLaserCooldown = 0.2f;
-
-constexpr float kBarrierY = 1050.0f;
-constexpr float kBarrierHeight = 8.0f;
 
 constexpr float kFloatingTextSeconds = 1.2f;
 
@@ -32,9 +30,8 @@ constexpr float kFloatingTextSeconds = 1.2f;
 constexpr int kMaxStepsPerUpdate = 60;
 
 // In Effect order: how long each lasts, and the power-up whose icon shows it in the HUD.
-constexpr std::array<float, 5> kEffectSeconds = {8.0f, 12.0f, 15.0f, 15.0f, 10.0f};
-constexpr std::array<PowerUpKind, 5> kEffectIcons = {PowerUpKind::Fireball, PowerUpKind::Laser, PowerUpKind::Barrier,
-                                                      PowerUpKind::Catch, PowerUpKind::Slow};
+constexpr std::array<float, 3> kEffectSeconds = {8.0f, 12.0f, 10.0f};
+constexpr std::array<PowerUpKind, 3> kEffectIcons = {PowerUpKind::Fireball, PowerUpKind::Laser, PowerUpKind::Slow};
 
 // Extra points for a gold brick, on top of the usual 10.
 constexpr int kGoldBonus = 50;
@@ -78,9 +75,6 @@ constexpr float kComboSeconds = 0.6f;
 const gfx::Color kMessageColor{1.0f, 0.82f, 0.42f, 1.0f};
 const gfx::Color kHudColor{0.99f, 0.87f, 0.58f, 1.0f};
 const gfx::Color kWhite{1.0f, 1.0f, 1.0f, 1.0f};
-const gfx::Color kBarrierColor{1.0f, 0.72f, 0.26f, 1.0f};
-const gfx::Color kLaserGlowColor{1.0f, 0.54f, 0.12f, 0.35f};
-const gfx::Color kLaserColor{1.0f, 0.93f, 0.7f, 1.0f};
 
 const char* brickTypeName(int type) {
     static const std::array<const char*, kBrickTypeCount> names = {"sandstone", "limestone", "granite",
@@ -91,7 +85,7 @@ const char* brickTypeName(int type) {
 // In PowerUpKind order; names the files in powerups/ and anim/.
 const char* powerUpFile(int kind) {
     static const std::array<const char*, kPowerUpKindCount> names = {
-        "life", "multiball", "expand", "shrink", "laser", "fireball", "slow", "barrier", "catch", "bonus",
+        "life", "multiball", "expand", "shrink", "laser", "fireball", "slow", "bonus",
     };
     return names[kind];
 }
@@ -165,6 +159,7 @@ Game::Game(const std::string& dataDir) {
     ballGlowPulse_ = strip("ball_glow_pulse", {96, 96, 8, 12.0f, true, 48.0f, 48.0f});
     ballLost_ = strip("ball_lost", {128, 128, 14, 30.0f, false, 64.0f, 40.0f});
     sparkleBurst_ = strip("sparkle_burst", {256, 256, 16, 24.0f, false, 128.0f, 128.0f});
+    laserShot_ = strip("laser_shot", {16, 64, 4, 20.0f, true, 8.0f, 32.0f});
 
     for (int i = 0; i < kDustMoteCount; ++i) {
         // Part way through their lives, so the room is not empty at the start.
@@ -303,9 +298,9 @@ void Game::onKeyPress(int key) {
             playSound(Sound::PowerUpSpawn, player_.centerX());
             break;
         default:
-            // 1..9 and 0 drop each power-up kind in turn.
-            if (key >= GLFW_KEY_0 && key <= GLFW_KEY_9) {
-                const int kind = (key - GLFW_KEY_0 + kPowerUpKindCount - 1) % kPowerUpKindCount;
+            // 1, 2, 3... drop each power-up kind in turn.
+            if (key >= GLFW_KEY_1 && key < GLFW_KEY_1 + kPowerUpKindCount) {
+                const int kind = key - GLFW_KEY_1;
                 powerUps_.push_back(
                     PowerUp::make(player_.centerX(), Player::kTop - 400.0f, static_cast<PowerUpKind>(kind)));
                 playSound(Sound::PowerUpSpawn, player_.centerX());
@@ -411,12 +406,6 @@ void Game::moveBalls(float seconds) {
             spawn(*impactSpark_, ball.x, kCeiling);
             playSound(Sound::WallBounce, ball.x);
         }
-        if (active(Effect::Barrier) && ball.dy > 0.0f && ball.y + r > kBarrierY) {
-            ball.y = kBarrierY - r;
-            ball.dy = -std::abs(ball.dy);
-            spawn(*impactSpark_, ball.x, kBarrierY);
-            playSound(Sound::WallBounce, ball.x);
-        }
 
         if (ball.dy > 0.0f && paddle.intersectsCircle(ball.x, ball.y, r)) {
             const float offset = ball.x - player_.centerX();
@@ -425,12 +414,7 @@ void Game::moveBalls(float seconds) {
                 paddleGlowSeconds_ = 0.0f;
                 spawn(*impactSpark_, ball.x, paddle.y);
                 playSound(Sound::PaddleHit, ball.x);
-                if (active(Effect::Catch)) {
-                    ball.stuck = true;
-                    ball.stuckOffset = offset;
-                } else {
-                    aimFromPaddle(ball, offset, player_);
-                }
+                aimFromPaddle(ball, offset, player_);
             } else {
                 // Caught by the end of the paddle, too low to bounce up: knock it sideways.
                 ball.dx = std::copysign(std::abs(ball.dx), offset);
@@ -640,14 +624,7 @@ void Game::movePowerUps(float seconds) {
 
 void Game::updateEffects(float seconds) {
     for (int effect = 0; effect < kEffectCount; ++effect) {
-        float& left = effectSeconds_[effect];
-        if (left <= 0.0f) {
-            continue;
-        }
-        left -= seconds;
-        if (left <= 0.0f && static_cast<Effect>(effect) == Effect::Catch && releaseStuckBalls()) {
-            playSound(Sound::BallLaunch, player_.centerX());
-        }
+        effectSeconds_[effect] = std::max(0.0f, effectSeconds_[effect] - seconds);
     }
     laserCooldown_ = std::max(0.0f, laserCooldown_ - seconds);
     comboSeconds_ = std::max(0.0f, comboSeconds_ - seconds);
@@ -676,7 +653,6 @@ void Game::applyPowerUp(const PowerUp& powerUp) {
             ++lives_;
             break;
         case PowerUpKind::Multiball: {
-            releaseStuckBalls();
             std::vector<Ball> added;
             for (const Ball& ball : balls_) {
                 for (float angle : {-kMultiballSpread, kMultiballSpread}) {
@@ -706,12 +682,6 @@ void Game::applyPowerUp(const PowerUp& powerUp) {
         case PowerUpKind::Slow:
             effectSeconds_[static_cast<int>(Effect::Slow)] = kEffectSeconds[static_cast<int>(Effect::Slow)];
             break;
-        case PowerUpKind::Barrier:
-            effectSeconds_[static_cast<int>(Effect::Barrier)] = kEffectSeconds[static_cast<int>(Effect::Barrier)];
-            break;
-        case PowerUpKind::Catch:
-            effectSeconds_[static_cast<int>(Effect::Catch)] = kEffectSeconds[static_cast<int>(Effect::Catch)];
-            break;
         case PowerUpKind::Bonus:
             score_ += 500;
             break;
@@ -719,9 +689,6 @@ void Game::applyPowerUp(const PowerUp& powerUp) {
 }
 
 void Game::fire() {
-    if (releaseStuckBalls()) {
-        playSound(Sound::BallLaunch, player_.centerX());
-    }
     if (active(Effect::Laser) && laserCooldown_ <= 0.0f) {
         lasers_.push_back({player_.centerX(), Player::kTop - kLaserHeight});
         laserCooldown_ = kLaserCooldown;
@@ -830,22 +797,8 @@ void Game::draw() const {
         drawBrick(brick);
     }
 
-    if (active(Effect::Barrier)) {
-        // Blinks during its last two seconds.
-        const float left = effectSeconds_[static_cast<int>(Effect::Barrier)];
-        const float alpha = left > 2.0f ? 1.0f : 0.55f + 0.45f * std::cos(left * 12.0f);
-        const float width = kWallRight - kWallLeft;
-        gfx::Color glow = kBarrierColor;
-        glow.a = 0.3f * alpha;
-        gfx::fillRect({kWallLeft, kBarrierY - 6.0f, width, kBarrierHeight + 12.0f}, glow);
-        gfx::Color core = kBarrierColor;
-        core.a = 0.95f * alpha;
-        gfx::fillRect({kWallLeft, kBarrierY, width, kBarrierHeight}, core);
-    }
-
     for (const Laser& laser : lasers_) {
-        gfx::fillRect({laser.x - kLaserWidth, laser.y - 4.0f, kLaserWidth * 2.0f, kLaserHeight + 8.0f}, kLaserGlowColor);
-        gfx::fillRect({laser.x - kLaserWidth * 0.5f, laser.y, kLaserWidth, kLaserHeight}, kLaserColor);
+        laserShot_->draw(clock_, laser.x, laser.y + kLaserHeight * 0.5f, 0.0f, gfx::Blend::Additive);
     }
     for (const PowerUp& powerUp : powerUps_) {
         powerUpAnimations_[static_cast<int>(powerUp.kind)]->draw(clock_, powerUp.x, powerUp.y);
@@ -967,20 +920,20 @@ void Game::drawHelp() const {
     };
     centred("Brake The Bricks 2.0", panel.y + 30.0f, 66.0f, kMessageColor);
     centred("Left / Right - Move    Enter - Start / Pause", panel.y + 115.0f, 33.0f, kWhite);
-    centred("Space - Fire / Release    M - Sound    F11 - Fullscreen    Esc - Exit", panel.y + 155.0f, 33.0f, kWhite);
+    centred("Space - Launch / Fire lasers    M - Sound    F11 - Fullscreen    Esc - Exit", panel.y + 155.0f, 33.0f, kWhite);
 
     const float icon = 64.0f;
-    const float rowHeight = 100.0f;
+    const float rowHeight = 120.0f;
     for (int kind = 0; kind < kPowerUpKindCount; ++kind) {
-        const float x = panel.x + 80.0f + (kind / 5) * 560.0f;
-        const float y = panel.y + 230.0f + (kind % 5) * rowHeight;
+        const float x = panel.x + 80.0f + (kind / 4) * 560.0f;
+        const float y = panel.y + 240.0f + (kind % 4) * rowHeight;
         gfx::drawImage(*powerUpImages_[kind], {x, y, icon, icon});
         const auto powerUp = static_cast<PowerUpKind>(kind);
         font_->draw(powerUpName(powerUp), x + icon + 24.0f, y - 8.0f, 44.0f, kMessageColor);
         font_->draw(powerUpDescription(powerUp), x + icon + 24.0f, y + 40.0f, 33.0f, kWhite);
     }
 
-    centred("Debug: Q clear level, W/E paddle size, R random power-up, 1-0 drop power-up", panel.y + 787.0f, 22.0f,
+    centred("Debug: Q clear level, W/E paddle size, R random power-up, 1-8 drop power-up", panel.y + 787.0f, 22.0f,
             {1.0f, 1.0f, 1.0f, 0.6f});
     centred("H - Close help", panel.y + 817.0f, 22.0f, {1.0f, 1.0f, 1.0f, 0.6f});
 }

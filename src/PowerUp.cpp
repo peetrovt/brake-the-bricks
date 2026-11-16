@@ -19,8 +19,6 @@ constexpr std::array<int, kPowerUpKindCount> kWeights = {
     3,  // Laser
     2,  // Fireball
     3,  // Slow
-    2,  // Barrier
-    3,  // Catch
     4,  // Bonus
 };
 
@@ -56,10 +54,6 @@ const char* powerUpName(PowerUpKind kind) {
             return "Fireball";
         case PowerUpKind::Slow:
             return "Slow";
-        case PowerUpKind::Barrier:
-            return "Barrier";
-        case PowerUpKind::Catch:
-            return "Catch";
         case PowerUpKind::Bonus:
             return "+500";
     }
@@ -82,10 +76,6 @@ const char* powerUpDescription(PowerUpKind kind) {
             return "Balls smash through";
         case PowerUpKind::Slow:
             return "Slower balls";
-        case PowerUpKind::Barrier:
-            return "Wall below the paddle";
-        case PowerUpKind::Catch:
-            return "Ball sticks, Space fires";
         case PowerUpKind::Bonus:
             return "500 points";
     }
