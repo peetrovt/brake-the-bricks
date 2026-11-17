@@ -29,6 +29,12 @@ void Player::shrink() {
     }
 }
 
+void Player::restore(float centerX, PaddleSize size) {
+    size_ = size;
+    centerX_ = centerX;
+    keepInsideField();
+}
+
 float Player::width() const {
     switch (size_) {
         case PaddleSize::Short:

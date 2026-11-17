@@ -7,9 +7,17 @@
 #include <GLFW/glfw3.h>
 #include <algorithm>
 #include <cmath>
+#include <filesystem>
+#include <fstream>
+#include <limits>
+#include <utility>
 
 namespace btb {
 namespace {
+
+constexpr const char* kStartMessage = "Press Enter to Start!";
+constexpr const char* kSaveHeader = "brake-the-bricks-save";
+constexpr int kSaveVersion = 1;
 
 constexpr float kPi = 3.14159265358979f;
 // Hitting the ball with the very end of the paddle sends it off at this angle from vertical.
@@ -105,7 +113,7 @@ void followPaddle(Ball& ball, const Player& player) {
 
 }  // namespace
 
-Game::Game(const std::string& dataDir) {
+Game::Game(const std::string& dataDir, std::string savePath) : savePath_(std::move(savePath)) {
     const std::string art = dataDir + "/assets/";
     auto load = [&](const std::string& name) { return std::make_unique<gfx::Texture>(art + name); };
     auto strip = [&](const std::string& name, const AnimationInfo& info) {
@@ -173,7 +181,200 @@ Game::Game(const std::string& dataDir) {
     mixer_.loop(sounds_[static_cast<int>(Sound::AmbientLoop)], kMusicVolume);
 
     startLevel();
-    showMessage(State::Ready, "Press Enter to Start!");
+    showMessage(State::Ready, kStartMessage);
+    this->load();  // the member, not the image loader above
+}
+
+// The save file is plain text: a header line, then one line per value or object.
+// Only what the rules depend on is kept; animations and particles start afresh.
+void Game::save() const {
+    if (savePath_.empty()) {
+        return;
+    }
+    std::error_code error;
+    if (state_ == State::GameOver || state_ == State::Won) {
+        std::filesystem::remove(savePath_, error);
+        return;
+    }
+
+    const std::filesystem::path path(savePath_);
+    std::filesystem::create_directories(path.parent_path(), error);
+    // Written next to the save and renamed over it, so a crash mid-write cannot leave half a file.
+    const std::filesystem::path temporary = path.string() + ".tmp";
+    {
+        std::ofstream out(temporary);
+        out.precision(std::numeric_limits<float>::max_digits10);
+        out << kSaveHeader << ' ' << kSaveVersion << '\n';
+        out << "state " << static_cast<int>(state_) << '\n';
+        out << "level " << levelIndex_ << '\n';
+        out << "lives " << lives_ << '\n';
+        out << "score " << score_ << '\n';
+        out << "paddle " << player_.centerX() << ' ' << static_cast<int>(player_.size()) << '\n';
+        out << "effects";
+        for (float seconds : effectSeconds_) {
+            out << ' ' << seconds;
+        }
+        out << '\n';
+        out << "laser_cooldown " << laserCooldown_ << '\n';
+        out << "combo " << comboCount_ << ' ' << comboSeconds_ << '\n';
+        out << "balls " << balls_.size() << '\n';
+        for (const Ball& ball : balls_) {
+            out << ball.x << ' ' << ball.y << ' ' << ball.dx << ' ' << ball.dy << ' ' << ball.stuck << ' '
+                << ball.stuckOffset << '\n';
+        }
+        out << "bricks " << bricks_.size() << '\n';
+        for (const Brick& brick : bricks_) {
+            out << brick.x << ' ' << brick.y << ' ' << static_cast<int>(brick.type) << ' ' << brick.variant << ' '
+                << brick.hitsLeft << '\n';
+        }
+        out << "powerups " << powerUps_.size() << '\n';
+        for (const PowerUp& powerUp : powerUps_) {
+            out << powerUp.x << ' ' << powerUp.y << ' ' << powerUp.speed << ' ' << static_cast<int>(powerUp.kind)
+                << '\n';
+        }
+        out << "lasers " << lasers_.size() << '\n';
+        for (const Laser& laser : lasers_) {
+            out << laser.x << ' ' << laser.y << '\n';
+        }
+        if (!out.flush()) {
+            out.close();
+            std::filesystem::remove(temporary, error);
+            return;
+        }
+    }
+    std::filesystem::rename(temporary, path, error);
+}
+
+bool Game::load() {
+    if (savePath_.empty()) {
+        return false;
+    }
+    std::ifstream in(savePath_);
+    if (!in) {
+        return false;
+    }
+
+    // Each line starts with a name; a different one than expected fails the stream.
+    auto expect = [&in](const char* name) {
+        std::string word;
+        if (in >> word && word != name) {
+            in.setstate(std::ios::failbit);
+        }
+        return static_cast<bool>(in);
+    };
+    auto count = [&](const char* name) {
+        size_t n = 0;
+        if (expect(name) && !(in >> n && n <= 10000)) {
+            in.setstate(std::ios::failbit);
+        }
+        return in ? n : 0;
+    };
+
+    int version = 0;
+    if (!(expect(kSaveHeader) && in >> version) || version != kSaveVersion) {
+        return false;
+    }
+    int state = 0;
+    int level = 0;
+    int lives = 0;
+    int score = 0;
+    float paddleX = 0.0f;
+    int paddleSize = 0;
+    std::array<float, kEffectCount> effects{};
+    float laserCooldown = 0.0f;
+    int combo = 0;
+    float comboSeconds = 0.0f;
+    expect("state") && in >> state;
+    expect("level") && in >> level;
+    expect("lives") && in >> lives;
+    expect("score") && in >> score;
+    expect("paddle") && in >> paddleX >> paddleSize;
+    if (expect("effects")) {
+        for (float& seconds : effects) {
+            in >> seconds;
+        }
+    }
+    expect("laser_cooldown") && in >> laserCooldown;
+    expect("combo") && in >> combo >> comboSeconds;
+
+    std::vector<Ball> balls(count("balls"));
+    for (Ball& ball : balls) {
+        in >> ball.x >> ball.y >> ball.dx >> ball.dy >> ball.stuck >> ball.stuckOffset;
+    }
+    std::vector<Brick> bricks(count("bricks"));
+    for (Brick& brick : bricks) {
+        int type = 0;
+        in >> brick.x >> brick.y >> type >> brick.variant >> brick.hitsLeft;
+        if (!in || type < 0 || type >= kBrickTypeCount) {
+            in.setstate(std::ios::failbit);
+            break;
+        }
+        brick.type = static_cast<BrickType>(type);
+        brick.hitSeconds = -1.0f;
+        if (brick.variant < 0 || brick.variant >= brickVariants(brick.type) || brick.hitsLeft < 1 ||
+            brick.hitsLeft > brickMaxHits(brick.type)) {
+            in.setstate(std::ios::failbit);
+            break;
+        }
+    }
+    std::vector<PowerUp> powerUps(count("powerups"));
+    for (PowerUp& powerUp : powerUps) {
+        int kind = 0;
+        in >> powerUp.x >> powerUp.y >> powerUp.speed >> kind;
+        if (!in || kind < 0 || kind >= kPowerUpKindCount) {
+            in.setstate(std::ios::failbit);
+            break;
+        }
+        powerUp.kind = static_cast<PowerUpKind>(kind);
+    }
+    std::vector<Laser> lasers(count("lasers"));
+    for (Laser& laser : lasers) {
+        in >> laser.x >> laser.y;
+    }
+
+    const auto restored = static_cast<State>(state);
+    const bool resumable = restored == State::Ready || restored == State::Playing || restored == State::Paused ||
+                           restored == State::LifeLost || restored == State::LevelComplete;
+    if (!in || !resumable || level < 0 || level >= static_cast<int>(levels().size()) || lives < 1 ||
+        paddleSize < 0 || paddleSize > static_cast<int>(PaddleSize::Wide) ||
+        (balls.empty() && restored != State::LevelComplete)) {
+        return false;
+    }
+
+    levelIndex_ = level;
+    lives_ = lives;
+    score_ = score;
+    player_.restore(paddleX, static_cast<PaddleSize>(paddleSize));
+    effectSeconds_ = effects;
+    laserCooldown_ = laserCooldown;
+    comboCount_ = combo;
+    comboSeconds_ = comboSeconds;
+    balls_ = std::move(balls);
+    bricks_ = std::move(bricks);
+    powerUps_ = std::move(powerUps);
+    lasers_ = std::move(lasers);
+    floatingTexts_.clear();
+    oneShots_.clear();
+    trail_.clear();
+    paddleGlowSeconds_ = -1.0f;
+    pendingSeconds_ = 0.0;
+
+    // A game left mid-play comes back paused, so it waits for the player.
+    switch (restored) {
+        case State::Ready:
+            showMessage(State::Ready, kStartMessage);
+            break;
+        case State::LifeLost:
+            showMessage(State::LifeLost, "");
+            break;
+        case State::LevelComplete:
+            showMessage(State::LevelComplete, "Level " + std::to_string(levelIndex_ + 1));
+            break;
+        default:
+            showMessage(State::Paused, "PAUSE");
+            break;
+    }
+    return true;
 }
 
 void Game::startLevel() {
@@ -249,6 +450,7 @@ void Game::onKeyPress(int key) {
                 case State::Playing:
                     showMessage(State::Paused, "PAUSE");
                     playSound(Sound::UiPause);
+                    save();
                     break;
                 case State::GameOver:
                     // Like the original, a new game continues from the level that was lost.

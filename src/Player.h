@@ -22,6 +22,8 @@ public:
     void move(int direction, float seconds);
     void grow();
     void shrink();
+    // Puts back a paddle from a saved game.
+    void restore(float centerX, PaddleSize size);
 
     PaddleSize size() const { return size_; }
     float centerX() const { return centerX_; }

@@ -4,6 +4,7 @@
 
 #include <GLFW/glfw3.h>
 #include <algorithm>
+#include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <stdexcept>
@@ -30,6 +31,20 @@ std::string findDataDir() {
         }
     }
     return BTB_SOURCE_DIR;
+}
+
+// $XDG_DATA_HOME/brake-the-bricks/save.txt, by default ~/.local/share/brake-the-bricks/save.txt.
+// Empty, which turns saving off, if neither variable is set.
+std::string findSavePath() {
+    std::filesystem::path dir;
+    if (const char* data = std::getenv("XDG_DATA_HOME"); data && *data) {
+        dir = data;
+    } else if (const char* home = std::getenv("HOME"); home && *home) {
+        dir = std::filesystem::path(home) / ".local" / "share";
+    } else {
+        return {};
+    }
+    return (dir / "brake-the-bricks" / "save.txt").string();
 }
 
 void toggleFullscreen(GLFWwindow* window) {
@@ -89,7 +104,7 @@ int main() {
 
     int exitCode = 0;
     try {
-        btb::Game game(findDataDir());
+        btb::Game game(findDataDir(), findSavePath());
         glfwSetWindowUserPointer(window, &game);
         glfwSetKeyCallback(window, onKey);
 
@@ -116,6 +131,7 @@ int main() {
             glfwSwapBuffers(window);
         }
         glfwSetKeyCallback(window, nullptr);
+        game.save();
     } catch (const std::exception& error) {
         std::cerr << error.what() << '\n';
         exitCode = 1;

@@ -20,7 +20,11 @@ class Game {
 public:
     // Loads the art from `dataDir` (the folder holding assets ); the OpenGL context must be current.
     // Throws std::runtime_error if an image is missing.
-    explicit Game(const std::string& dataDir);
+    // A game saved at `savePath` is picked up where it was left; an empty path turns saving off.
+    Game(const std::string& dataDir, std::string savePath);
+
+    // Writes the game in progress to the save file, or removes the file when there is nothing to resume.
+    void save() const;
 
     // `key` is a GLFW key code.
     void onKeyPress(int key);
@@ -86,6 +90,9 @@ private:
         bool fadeIn;  // otherwise it starts at full brightness
         float age;   // seconds
     };
+
+    // Returns false, leaving the game as it was, if the file is missing or not a valid save.
+    bool load();
 
     void startLevel();
     // Clears power-ups and puts a single ball on a normal-sized paddle.
@@ -187,6 +194,7 @@ private:
     float shakeY_ = 0.0f;
     int trailSteps_ = 0;
 
+    std::string savePath_;
     State state_ = State::Ready;
     std::string message_;
     bool helpVisible_ = false;
