@@ -357,7 +357,7 @@ void Game::step(int moveDirection) {
                 playSound(Sound::LevelComplete);
                 if (levelIndex_ < static_cast<int>(levels().size()) - 1) {
                     ++levelIndex_;
-                    showMessage(State::LevelComplete, "Press Enter for next Level!");
+                    showMessage(State::LevelComplete, "Level " + std::to_string(levelIndex_ + 1));
                 } else {
                     showMessage(State::Won, "WIN!");
                 }
@@ -716,7 +716,7 @@ bool Game::releaseStuckBalls() {
 void Game::loseLife() {
     if (--lives_ > 0) {
         resetPaddleAndBall();
-        showMessage(State::LifeLost, "Lives left: " + std::to_string(lives_));
+        showMessage(State::LifeLost, "");
         playSound(Sound::LifeLost);
     } else {
         showMessage(State::GameOver, "GAME OVER");
@@ -828,9 +828,10 @@ void Game::draw() const {
                     {1.0f, 0.95f, 0.6f, 1.0f - text.age / kFloatingTextSeconds});
     }
 
-    if (state_ == State::LevelComplete || state_ == State::GameOver || state_ == State::Won) {
+    if (state_ == State::Ready || state_ == State::LevelComplete || state_ == State::GameOver ||
+        state_ == State::Won) {
         drawBanner(message_);
-    } else if (state_ != State::Playing) {
+    } else if (state_ != State::Playing && !message_.empty()) {
         drawMessage(message_);
     }
     drawHud();
