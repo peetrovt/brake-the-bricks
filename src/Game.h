@@ -24,6 +24,7 @@ public:
     Game(const std::string& dataDir, std::string savePath);
 
     // Writes the game in progress to the save file, or removes the file when there is nothing to resume.
+    // Also writes the best score, which is kept in its own file next to the save.
     void save() const;
 
     // `key` is a GLFW key code.
@@ -93,6 +94,8 @@ private:
 
     // Returns false, leaving the game as it was, if the file is missing or not a valid save.
     bool load();
+    void loadBestScore();
+    void saveBestScore() const;
 
     void startLevel();
     // Clears power-ups and puts a single ball on a normal-sized paddle.
@@ -195,6 +198,7 @@ private:
     int trailSteps_ = 0;
 
     std::string savePath_;
+    std::string bestScorePath_;  // empty when saving is off
     State state_ = State::Ready;
     std::string message_;
     bool helpVisible_ = false;
@@ -202,6 +206,8 @@ private:
     int levelIndex_ = 0;
     int lives_ = kPlayerDefaultLives;
     int score_ = 0;
+    int bestScore_ = 0;     // includes the game in progress
+    bool newBest_ = false;  // the game in progress has beaten the best score from before it
 };
 
 }  // namespace btb

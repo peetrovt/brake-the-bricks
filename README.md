@@ -35,6 +35,8 @@ in turn.
 - Sandstone takes one hit, limestone two and granite three, showing cracks along the way. Jade always drops a
   power-up and gold is worth 50 extra points. Obsidian never breaks and is not needed to finish a level.
 - 10 points per broken brick, 5 per crack, 10 per caught power-up.
+- The best score is shown under the score and kept in `best.txt` next to the save file
+  (`~/.local/share/brake-the-bricks/` by default).
 - Where the ball hits the paddle sets its angle: the ends send it off at up to 60 degrees.
 
 | Power-up | Effect |

@@ -17,6 +17,7 @@ namespace {
 
 constexpr const char* kStartMessage = "Press Enter to Start!";
 constexpr const char* kSaveHeader = "brake-the-bricks-save";
+constexpr const char* kBestScoreFile = "best.txt";
 constexpr int kSaveVersion = 1;
 
 constexpr float kPi = 3.14159265358979f;
@@ -114,6 +115,10 @@ void followPaddle(Ball& ball, const Player& player) {
 }  // namespace
 
 Game::Game(const std::string& dataDir, std::string savePath) : savePath_(std::move(savePath)) {
+    if (!savePath_.empty()) {
+        bestScorePath_ = (std::filesystem::path(savePath_).parent_path() / kBestScoreFile).string();
+    }
+    loadBestScore();
     const std::string art = dataDir + "/assets/";
     auto load = [&](const std::string& name) { return std::make_unique<gfx::Texture>(art + name); };
     auto strip = [&](const std::string& name, const AnimationInfo& info) {
@@ -191,6 +196,7 @@ void Game::save() const {
     if (savePath_.empty()) {
         return;
     }
+    saveBestScore();
     std::error_code error;
     if (state_ == State::GameOver || state_ == State::Won) {
         std::filesystem::remove(savePath_, error);
@@ -344,6 +350,8 @@ bool Game::load() {
     levelIndex_ = level;
     lives_ = lives;
     score_ = score;
+    bestScore_ = std::max(bestScore_, score_);
+    newBest_ = score_ > 0 && score_ == bestScore_;
     player_.restore(paddleX, static_cast<PaddleSize>(paddleSize));
     effectSeconds_ = effects;
     laserCooldown_ = laserCooldown;
@@ -375,6 +383,39 @@ bool Game::load() {
             break;
     }
     return true;
+}
+
+// The best score file holds just the number.
+void Game::loadBestScore() {
+    if (bestScorePath_.empty()) {
+        return;
+    }
+    std::ifstream in(bestScorePath_);
+    int best = 0;
+    if (in >> best && best > 0) {
+        bestScore_ = best;
+    }
+}
+
+void Game::saveBestScore() const {
+    if (bestScorePath_.empty() || bestScore_ <= 0) {
+        return;
+    }
+    const std::filesystem::path path(bestScorePath_);
+    std::error_code error;
+    std::filesystem::create_directories(path.parent_path(), error);
+    // Written next to the file and renamed over it, like the save.
+    const std::filesystem::path temporary = path.string() + ".tmp";
+    {
+        std::ofstream out(temporary);
+        out << bestScore_ << '\n';
+        if (!out.flush()) {
+            out.close();
+            std::filesystem::remove(temporary, error);
+            return;
+        }
+    }
+    std::filesystem::rename(temporary, path, error);
 }
 
 void Game::startLevel() {
@@ -455,6 +496,7 @@ void Game::onKeyPress(int key) {
                 case State::GameOver:
                     // Like the original, a new game continues from the level that was lost.
                     score_ = 0;
+                    newBest_ = false;
                     lives_ = kPlayerDefaultLives;
                     startLevel();
                     playSound(Sound::UiStoneDoor);
@@ -463,6 +505,7 @@ void Game::onKeyPress(int key) {
                 case State::Won:
                     levelIndex_ = 0;
                     score_ = 0;
+                    newBest_ = false;
                     lives_ = kPlayerDefaultLives;
                     startLevel();
                     playSound(Sound::UiStoneDoor);
@@ -528,6 +571,10 @@ void Game::update(double seconds, int moveDirection) {
     if (steps == kMaxStepsPerUpdate) {
         pendingSeconds_ = 0.0;
     }
+    if (score_ > bestScore_) {
+        bestScore_ = score_;
+        newBest_ = true;
+    }
 }
 
 void Game::step(int moveDirection) {
@@ -562,6 +609,8 @@ void Game::step(int moveDirection) {
                     showMessage(State::LevelComplete, "Level " + std::to_string(levelIndex_ + 1));
                 } else {
                     showMessage(State::Won, "WIN!");
+                    bestScore_ = std::max(bestScore_, score_);
+                    saveBestScore();
                 }
             }
             break;
@@ -923,6 +972,8 @@ void Game::loseLife() {
     } else {
         showMessage(State::GameOver, "GAME OVER");
         playSound(Sound::GameOver);
+        bestScore_ = std::max(bestScore_, score_);
+        saveBestScore();
     }
 }
 
@@ -1033,6 +1084,14 @@ void Game::draw() const {
     if (state_ == State::Ready || state_ == State::LevelComplete || state_ == State::GameOver ||
         state_ == State::Won) {
         drawBanner(message_);
+        if ((state_ == State::GameOver || state_ == State::Won) && newBest_) {
+            // Under the banner, above the paddle.
+            const std::string text = "New best score!";
+            const float size = 40.0f;
+            gfx::Color color = kMessageColor;
+            color.a = std::min(bannerSeconds_ / kBannerGrowSeconds, 1.0f);
+            font_->draw(text, (kFieldWidth - font_->width(text, size)) * 0.5f, 925.0f, size, color);
+        }
     } else if (state_ != State::Playing && !message_.empty()) {
         drawMessage(message_);
     }
@@ -1078,8 +1137,16 @@ void Game::drawHud() const {
     };
     auto centred = [&](float panelX, float width) { return panelX + (kPanelWidth - width) * 0.5f; };
 
+    // The score with the best score in smaller type below it.
+    const float scoreSize = 34.0f;
+    const float bestSize = 26.0f;
+    const float scoreY = kPanelY + (kPanelHeight - (scoreSize + bestSize) * 1.15f) * 0.5f;
+    const float scorePanel = panel(0);
     const std::string score = "Score: " + std::to_string(score_);
-    font_->draw(score, centred(panel(0), font_->width(score, size)), textY, size, kHudColor);
+    font_->draw(score, centred(scorePanel, font_->width(score, scoreSize)), scoreY, scoreSize, kHudColor);
+    const std::string best = "Best: " + std::to_string(bestScore_);
+    font_->draw(best, centred(scorePanel, font_->width(best, bestSize)), scoreY + scoreSize * 1.15f, bestSize,
+                {kHudColor.r, kHudColor.g, kHudColor.b, 0.7f});
 
     // Lives can pile up past what fits as a row of icons, so one icon and a count.
     const std::string lives = "x " + std::to_string(lives_);
